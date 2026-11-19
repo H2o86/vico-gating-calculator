@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VICO Casting - Gating & Riser Design System (Lost Foam & Alphaset)</title>
+  <style>
+    :root {
+      --win-bg: #ececec;
+      --win-panel: #f8f8f8;
+      --win-border: #adadad;
+      --win-text: #111111;
+      --win-disabled-bg: #e5e8ec;
+      --zone-input-hdr: #1b4f72;
+      --zone-output-hdr: #145a32;
+      --cell-label: #d9d2e9;
+      --cell-input: #f4b084;
+      --cell-calc: #bdd7ee;
+      --cell-warn: #e60000;
+      --cell-warn-amber: #ff9900;
+      --cell-ok: #d9ead3;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 12px;
+    }
+
+    body {
+      margin: 0;
+      padding: 6px;
+      background-color: #bfc5cb;
+      color: var(--win-text);
+      user-select: none;
+    }
+
+    /* Main Window Frame (WinForms style like GUI.jfif) */
+    .win-window {
+      max-width: 1440px;
+      margin: 0 auto;
+      background-color: var(--win-bg);
+      border: 1px solid #4a4a4a;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+    }
+
+    /* Window Title Bar */
+    .win-titlebar {
+      background: #ffffff;
+      color: #000000;
+      padding: 5px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #cccccc;
+    }
+
+    .win-titlebar-text {
+      font-size: 12.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .win-titlebar-badge {
+      background: #1b4f72;
+      color: #fff;
+      font-size: 10.5px;
+      padding: 1px 7px;
+      border-radius: 2px;
+      font-weight: 600;
+    }
+
+    .win-controls {
+      display: flex;
+      gap: 14px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #444;
+    }
+
+    /* Tabs Bar */
+    .win-tabs-container {
+      padding: 6px 8px 0 8px;
+      background: var(--win-bg);
+      border-bottom: 1px solid var(--win-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .win-tabs {
+      display: flex;
+      gap: 2px;
+    }
+
+    .win-tab {
+      padding: 5px 14px;
+      background: #dcdcdc;
+      border: 1px solid var(--win-border);
+      border-bottom: none;
+      cursor: pointer;
+      color: #333;
+      position: relative;
+      top: 1px;
+    }
+
+    .win-tab:hover {
+      background: #e8e8e8;
+    }
+
+    .win-tab.active {
+      background: var(--win-bg);
+      font-weight: 700;
+      color: #000;
+      padding-top: 6px;
+      border-top: 2px solid #0066cc;
+      z-index: 2;
+    }
+
+    .win-toolbar-right {
+      display: flex;
+      gap: 5px;
+      padding-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    /* Classic WinForms Button */
+    .win-btn {
+      background: linear-gradient(to bottom, #f9f9f9 0%, #e1e1e1 100%);
+      border: 1px solid #969696;
+      padding: 3px 10px;
+      color: #111;
+      cursor: pointer;
+      min-height: 23px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 11.5px;
+    }
+
+    .win-btn:hover {
+      background: linear-gradient(to bottom, #eef6ff 0%, #d5e8ff 100%);
+      border-color: #0078d7;
+    }
+
+    .win-btn:active {
+      background: #cce4f7;
+    }
+
+    /* Main Workspace Body: 2 Dedicated Zones */
+    .win-body {
+      padding: 8px;
+    }
+
+    .zones-container {
+      display: grid;
+      grid-template-columns: 540px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    @media (max-width: 1180px) {
+      .zones-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Dedicated Zone Containers */
+    .zone-box {
+      border: 1px solid #9e9e9e;
+      background: #e4e7eb;
+      padding: 6px;
+    }
+
+    .zone-box.input-zone {
+      border-top: 3px solid var(--zone-input-hdr);
+    }
+
+    .zone-box.output-zone {
+      border-top: 3px solid var(--zone-output-hdr);
+    }
+
+    .zone-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 10px;
+      margin-bottom: 6px;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 12.5px;
+      letter-spacing: 0.2px;
+    }
+
+    .zone-banner.input-banner {
+      background: linear-gradient(90deg, #1b4f72 0%, #2874a6 100%);
+    }
+
+    .zone-banner.output-banner {
+      background: linear-gradient(90deg, #145a32 0%, #1e8449 100%);
+    }
+
+    .zone-banner-sub {
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.92;
+    }
+
+    /* Fieldsets / GroupBoxes inside Zones */
+    fieldset.win-group {
+      border: 1px solid #c2c2c2;
+      background: var(--win-panel);
+      margin: 0 0 7px 0;
+      padding: 7px 9px 9px 9px;
+    }
+
+    fieldset.win-group:last-child {
+      margin-bottom: 0;
+    }
+
+    fieldset.win-group legend {
+      font-weight: 700;
+      color: #111;
+      padding: 0 6px;
+      font-size: 11.8px;
+      background: var(--win-panel);
+    }
+
+    /* Input Form Rows */
+    .input-row {
+      display: grid;
+      grid-template-columns: 205px 120px 38px 1fr;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+
+    .input-row-compact {
+      display: grid;
+      grid-template-columns: 125px 95px 30px 1fr;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+
+    /* Inputs & Selects */
+    input[type="number"],
+    input[type="text"],
+    select.win-select {
+      width: 100%;
+      height: 22px;
+      padding: 1px 5px;
+      border: 1px solid #888;
+      background-color: #ffffff;
+      color: #000;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    /* Highlight editable fields in Input Zone */
+    .input-zone input[type="number"]:not([readonly]),
+    .input-zone input[type="text"]:not([readonly]),
+    .input-zone select.win-select {
+      background-color: #fffdf7;
+      border-color: #6c7a89;
+      font-weight: 600;
+    }
+
+    .input-zone input:focus,
+    .input-zone select:focus {
+      outline: 2px solid #0066cc;
+      background-color: #ffffff;
+    }
+
+    select.win-select {
+      text-align: left;
+    }
+
+    input[readonly],
+    input:disabled {
+      background-color: var(--win-disabled-bg) !important;
+      color: #111;
+      border-color: #b0b0b0;
+      font-weight: 600;
+    }
+
+    /* Alloy Radio Grid in Step 1 */
+    .alloy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px 8px;
+      padding: 5px 8px;
+      background: #eef2f7;
+      border: 1px solid #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .alloy-grid label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 11.5px;
+    }
+
+    /* Mini Input Table for Gating Config (Step 3) */
+    .config-mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+
+    .config-mini-table th {
+      background: #e1e6eb;
+      border: 1px solid #aaa;
+      padding: 3px 4px;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .config-mini-table td {
+      border: 1px solid #bbb;
+      padding: 2px 4px;
+      text-align: center;
+      background: #fff;
+    }
+
+    .config-mini-table td.row-hdr {
+      background: var(--cell-label);
+      text-align: left;
+      font-weight: 600;
+      padding-left: 6px;
+      width: 145px;
+    }
+
+    .config-mini-table td.orange-edit {
+      background: var(--cell-input);
+      padding: 0;
+    }
+
+    .config-mini-table td.orange-edit input,
+    .config-mini-table td.orange-edit select {
+      width: 100%;
+      height: 21px;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-weight: 700;
+      font-size: 11.5px;
+    }
+
+    /* ================= OUTPUT ZONE STYLES ================= */
+    .kpi-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid #b8c4d0;
+      padding: 5px 8px;
+      text-align: center;
+    }
+
+    .kpi-card .kpi-title {
+      font-size: 10.8px;
+      color: #444;
+      margin-bottom: 2px;
+    }
+
+    .kpi-card .kpi-val {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0b3c5d;
+    }
+
+    .kpi-card .kpi-sub {
+      font-size: 10.5px;
+      color: #555;
+      margin-top: 1px;
+    }
+
+    /* Output Grid 2-Columns inside Result Panel 1 */
+    .out-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: #efefef;
+      border: 1px solid #ccc;
+      padding: 7px 9px;
+    }
+
+    .out-row {
+      display: grid;
+      grid-template-columns: 175px 115px 40px 1fr;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+
+    .out-row:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Status Highlight Colors (Like GUI.jfif Red Box) */
+    .warn-red-box {
+      background-color: var(--cell-warn) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      border-color: #800 !important;
+    }
+
+    .warn-amber-box {
+      background-color: var(--cell-warn-amber) !important;
+      color: #000000 !important;
+      font-weight: 700 !important;
+    }
+
+    .ok-green-box {
+      background-color: var(--cell-ok) !important;
+      color: #0f4c1d !important;
+      font-weight: 700 !important;
+    }
+
+    /* Output Color-coded Matrix Table (GUI.jfif Bottom Right) */
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid #888;
+    }
+
+    .matrix-table th {
+      background: #e2e6ea;
+      border: 1px solid #999;
+      padding: 4px 6px;
+      font-weight: 700;
+      text-align: center;
+      color: #111;
+    }
+
+    .matrix-table td {
+      border: 1px solid #ffffff;
+      padding: 3px 6px;
+      height: 22px;
+      text-align: center;
+      font-size: 11.5px;
+    }
+
+    .matrix-table td.row-label {
+      background-color: var(--cell-label);
+      text-align: left;
+      font-weight: 600;
+      padding-left: 8px;
+      width: 190px;
+      color: #111;
+    }
+
+    .matrix-table td.cell-orange-ro {
+      background-color: var(--cell-input);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .matrix-table td.cell-blue {
+      background-color: var(--cell-calc);
+      color: #000;
+      font-weight: 600;
+    }
+
+    .matrix-table tr.spacer-row td {
+      height: 5px;
+      background: var(--win-panel);
+      border: none;
+    }
+
+    /* Riser Result Display Layout */
+    .riser-result-layout {
+      display: grid;
+      grid-template-columns: 155px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .diagram-box {
+      background: #ffffff;
+      border: 1px solid #bbb;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Bottom Footer */
+    .win-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      border-top: 1px solid var(--win-border);
+      background: #e1e4e8;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-alerts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .badge-alert {
+      padding: 3px 9px;
+      border-radius: 2px;
+      font-weight: 600;
+      font-size: 11.5px;
+    }
+
+    .badge-red {
+      background: var(--cell-warn);
+      color: #fff;
+    }
+
+    .badge-green {
+      background: #1e7e34;
+      color: #fff;
+    }
+
+    .badge-amber {
+      background: #e0a800;
+      color: #000;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal-window {
+      background: var(--win-bg);
+      border: 1px solid #333;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+      max-width: 920px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-body {
+      padding: 12px;
+      overflow-y: auto;
+      background: #fff;
+      margin: 6px;
+      border: 1px solid #bbb;
+      user-select: text;
+    }
+
+    .vico-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+
+    .vico-table th,
+    .vico-table td {
+      border: 1px solid #777;
+      padding: 5px 8px;
+      text-align: left;
+      font-size: 12px;
+    }
+
+    .vico-table th {
+      background: #d9e1f2;
+      font-weight: 600;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .win-window {
+        box-shadow: none;
+        border: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="win-window">
+  <!-- Window Title Bar -->
+  <div class="win-titlebar">
+    <div class="win-titlebar-text">
+      <span>Gating &amp; Riser Design System for VICO Casting</span>
+      <span class="win-titlebar-badge" id="activeProcessBadge">LOST FOAM PROCESS</span>
+      <span style="font-weight:normal; color:#555; font-size:11px;">(Bố cục Quy hoạch Tập trung: Trái = Nhập thông số đầu vào | Phải = Hiển thị kết quả tính toán)</span>
+    </div>
+    <div class="win-controls no-print">
+      <span>&#8212;</span>
+      <span>&#9723;</span>
+      <span>&#10005;</span>
+    </div>
+  </div>
+
+  <!-- Top Process Tabs & Quick Presets Toolbar -->
+  <div class="win-tabs-container">
+    <div class="win-tabs">
+      <div class="win-tab active" id="tabLostFoam" onclick="switchProcess('LOST_FOAM')">
+        1. Lost Foam Casting (Đúc mẫu xốp)
+      </div>
+      <div class="win-tab" id="tabAlphaset" onclick="switchProcess('ALPHASET')">
+        2. Alphaset Sand Casting (Đúc cát nhựa)
+      </div>
+    </div>
+
+    <div class="win-toolbar-right no-print">
+      <button class="win-btn" onclick="loadPreset('DAO_LF')">Mẫu 1: Dao Lost Foam (139kg)</button>
+      <button class="win-btn" onclick="loadPreset('CANH_XOAN_LF')">Mẫu 2: Cánh xoắn Lost Foam</button>
+      <button class="win-btn" onclick="loadPreset('DIA_BUA_ALPHA')">Mẫu 3: Đĩa búa Alphaset</button>
+      <button class="win-btn" onclick="openModal('modalFormula')">User Formula</button>
+      <button class="win-btn" onclick="openModal('modalTips')">Tips (Bảng tra Chương 8)</button>
+      <button class="win-btn" onclick="openModal('modalReport')" style="font-weight:700; color:#004085;">Phiếu Thiết Kế Công Nghệ (Chương 9)</button>
+    </div>
+  </div>
+
+  <!-- Main Workspace Body: 2 Clearly Separated Zones -->
+  <div class="win-body">
+    <div class="zones-container">
+
+      <!-- ========================================================================= -->
+      <!-- KHU VỰC 1 (CỘT TRÁI): TẬP TRUNG TOÀN BỘ THÔNG SỐ ĐẦU VÀO (INPUT ZONE)     -->
+      <!-- ========================================================================= -->
+      <div class="zone-box input-zone">
+        <div class="zone-banner input-banner">
+          <span>KHU VỰC 1: NHẬP THÔNG SỐ ĐẦU VÀO (INPUT PARAMETERS)</span>
+          <span class="zone-banner-sub">Bước 1 &rarr; Bước 4</span>
+        </div>
+
+        <!-- BƯỚC 1: VẬT LIỆU & THÔNG TIN SẢN PHẨM ĐÚC -->
+        <fieldset class="win-group">
+          <legend>Bước 1. Vật liệu &amp; Thông tin Sản phẩm Đúc (Casting Information)</legend>
+
+          <div class="alloy-grid">
+            <label><input type="radio" name="alloy" value="GANG_CROM" checked onchange="onAlloyChange()" /> Gang Crom (Cr)</label>
+            <label><input type="radio" name="alloy" value="THEP_MN" onchange="onAlloyChange()" /> Thép Mn13Cr2</label>
+            <label><input type="radio" name="alloy" value="THEP_DEO" onchange="onAlloyChange()" /> Thép Dẻo (SCW)</label>
+            <label><input type="radio" name="alloy" value="THEP_CROM" onchange="onAlloyChange()" /> Thép Cr-Mo</label>
+            <label><input type="radio" name="alloy" value="CHIU_NHIET" onchange="onAlloyChange()" /> Thép Chịu nhiệt</label>
+            <label><input type="radio" name="alloy" value="GANG_XAM" onchange="onAlloyChange()" /> Gang xám (FC)</label>
+          </div>
+
+          <div class="input-row">
+            <span>Khối lượng riêng kim loại lỏng (&rho;):</span>
+            <input type="number" id="inpDensity" value="7100" step="50" oninput="recalculateAll()" />
+            <span>kg/m³</span>
+            <span style="font-size:11px; color:#555;">Gang/Thép: 7000-7200</span>
+          </div>
+
+          <div class="input-row">
+            <select class="win-select" id="selWeightMode" onchange="recalculateAll()">
+              <option value="SINGLE">Khối lượng 1 sản phẩm (W_1sp)</option>
+              <option value="CLUSTER">Tổng khối lượng cả chùm (W_tổng)</option>
+            </select>
+            <input type="number" id="inpCastingWeight" value="20.0" min="0.1" step="0.5" oninput="recalculateAll()" />
+            <span>kg</span>
+            <span style="font-size:11px; color:#555;">Nhập từ CAD 3D</span>
+          </div>
+
+          <div class="input-row">
+            <span>Số sản phẩm / chùm (No. of cavities):</span>
+            <input type="number" id="inpCavities" value="4" min="1" step="1" oninput="recalculateAll()" />
+            <span>SP</span>
+            <span style="font-size:11px; color:#555;">Số vật đúc/1 ống rót</span>
+          </div>
+
+          <div class="input-row">
+            <span>Chiều dày thành đúc TB (Avg. g):</span>
+            <input type="number" id="inpAvgThickness" value="41.0" min="2" step="1" oninput="recalculateAll()" />
+            <span>mm</span>
+            <span style="font-size:11px; color:#555;">Xét thành mỏng/dày</span>
+          </div>
+
+          <div class="input-row">
+            <select class="win-select" id="selRiserMode" onchange="onRiserRatioModeChange()">
+              <option value="PERCENT">Tỷ lệ KL Đậu / Sản phẩm (%)</option>
+              <option value="AUTO_MODULUS">Tự động lấy từ KL Đậu (Bước 2)</option>
+            </select>
+            <input type="number" id="inpRiserRatio" value="35.0" min="0" step="1" oninput="recalculateAll()" />
+            <span id="unitRiserRatio">%</span>
+            <span style="font-size:11px; color:#555;">Tỷ lệ bù ngót</span>
+          </div>
+
+          <div class="input-row" style="margin-bottom:0;">
+            <span>Tỷ lệ Hệ rót / (SP + Đậu):</span>
+            <input type="number" id="inpGatingRatio" value="15.0" min="0" step="1" readonly oninput="recalculateAll()" />
+            <span>%</span>
+            <label style="display:flex; align-items:center; gap:3px; cursor:pointer; font-size:11px;">
+              <input type="checkbox" id="chkUserGatingRatio" onchange="toggleUserField('inpGatingRatio', this.checked)" /> By user (VICO: 15%)
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- BƯỚC 2: THÔNG SỐ ĐẦU VÀO TÍNH ĐẬU BÙ NGÓT (CHƯƠNG 4) -->
+        <fieldset class="win-group">
+          <legend>Bước 2. Thông số Đầu vào Tính Đậu bù ngót (Riser Inputs - Chương 4)</legend>
+
+          <div class="input-row">
+            <span>Phương pháp tính Modulus M<sub>hot</sub>:</span>
+            <select class="win-select" id="selModulusMethod" style="grid-column: span 3;" onchange="onModulusMethodChange()">
+              <option value="FAST">Tính nhanh: M_hot &approx; t_hot / 2 (ĐK đường tròn nội tiếp - Mục 4.3)</option>
+              <option value="3D_VA">Tính từ hình học 3D: M_hot = V / A (Thể tích / Diện tích - Mục 3.3)</option>
+            </select>
+          </div>
+
+          <div class="input-row" id="rowHotspotT">
+            <span>ĐK nội tiếp vùng nóng Hotspot (t<sub>hot</sub>):</span>
+            <input type="number" id="inpHotspotT" value="41.0" min="4" step="1" oninput="recalculateAll()" />
+            <span>mm</span>
+            <span style="font-size:11px; color:#555;">Chỗ dày nhất/giao L-T-X</span>
+          </div>
+
+          <div class="input-row" id="row3DVA" style="display:none;">
+            <span>Thể tích V (cm³) &amp; Diện tích A (cm²):</span>
+            <div style="display:flex; gap:4px;">
+              <input type="number" id="inpVolCm3" value="500" min="1" oninput="recalculateAll()" title="Thể tích V (cm³)" />
+              <input type="number" id="inpAreaCm2" value="250" min="1" oninput="recalculateAll()" title="Diện tích tỏa nhiệt A (cm²)" />
+            </div>
+            <span>cm</span>
+            <span style="font-size:11px; color:#555;">Đo trên CAD 3D</span>
+          </div>
+
+          <div class="input-row">
+            <span>Hệ số k = M<sub>đậu</sub> / M<sub>hot</sub> (Mục 4.3):</span>
+            <input type="number" id="inpModulusFactor" value="1.25" min="1.0" max="2.0" step="0.05" oninput="recalculateAll()" />
+            <span>lần</span>
+            <span style="font-size:11px; color:#005a9e;">Chuẩn VICO: 1.2 &divide; 1.6</span>
+          </div>
+
+          <div class="input-row">
+            <span>Quan hệ hình học Đậu H<sub>đ</sub> / D<sub>đ</sub>:</span>
+            <select class="win-select" id="selRiserCase" style="grid-column: span 3;" onchange="recalculateAll()">
+              <option value="CASE1">Hđ = 1.5 Dđ (Gồm phần vát/chân: Dđ = 5.33 Mđ - Cần áp lực cao)</option>
+              <option value="CASE2">Hđ = 1.0 Dđ (Gồm phần vát/chân: Dđ = 6.00 Mđ - Đậu gọn tập trung)</option>
+              <option value="CASE3">Hđ = 1.5 Dđ (Không tính vát/chân: Dđ = 4.67 Mđ - Trụ hữu ích)</option>
+              <option value="CASE4" selected>Hđ = 1.0 Dđ (Không tính vát/chân: Dđ = 5.00 Mđ - Kiểm tra nhanh)</option>
+            </select>
+          </div>
+
+          <div class="input-row" style="margin-bottom:0;">
+            <span>Tổng số đậu / Số SP nuôi chung (n):</span>
+            <div style="display:flex; gap:4px;">
+              <input type="number" id="inpRiserCount" value="4" min="1" step="1" oninput="recalculateAll()" title="Tổng số lượng đậu trên chùm" />
+              <input type="number" id="inpSharedN" value="1" min="1" max="6" step="1" oninput="recalculateAll()" title="Số SP/hotspot nuôi chung bởi 1 đậu (Mục 4.5)" />
+            </div>
+            <span>đậu/n</span>
+            <span style="font-size:11px; color:#555;">n&gt;1: Đậu chung (&radic;[3]n)</span>
+          </div>
+        </fieldset>
+
+        <!-- BƯỚC 3: THÔNG SỐ ĐẦU VÀO HỆ THỐNG RÓT & THỦY LỰC (CHƯƠNG 5) -->
+        <fieldset class="win-group">
+          <legend>Bước 3. Thông số Đầu vào Hệ thống rót &amp; Thủy lực (Gating Inputs - Chương 5)</legend>
+
+          <!-- Sơ đồ cột áp + Ô nhập H, C, P, ht -->
+          <div style="display:grid; grid-template-columns: 138px 1fr; gap:8px; align-items:center; margin-bottom:6px;">
+            <div class="diagram-box" style="min-height:135px;">
+              <svg width="130" height="132" viewBox="0 0 145 150">
+                <circle cx="28" cy="12" r="4.5" fill="#d98880" stroke="#333" stroke-width="1.2" />
+                <line x1="33" y1="12" x2="62" y2="12" stroke="#333" stroke-width="1.5" />
+                <line x1="50" y1="12" x2="50" y2="28" stroke="#333" stroke-width="1" stroke-dasharray="2,2" />
+                <text x="38" y="23" font-size="9" fill="#000">ht</text>
+                <polygon points="10,28 34,28 22,45" fill="#4a7ebb" stroke="#222" stroke-width="1.2" />
+                <line x1="22" y1="45" x2="22" y2="108" stroke="#222" stroke-width="2.5" />
+                <line x1="22" y1="108" x2="62" y2="108" stroke="#222" stroke-width="2" />
+                <polygon points="56,105 62,108 56,111" fill="#222" />
+                <rect x="62" y="76" width="42" height="46" fill="none" stroke="#222" stroke-width="1.3" />
+                <rect x="62" y="98" width="42" height="24" fill="#4a7ebb" stroke="#222" stroke-width="1" />
+                <line x1="34" y1="28" x2="58" y2="28" stroke="#444" stroke-width="0.8" />
+                <line x1="48" y1="28" x2="48" y2="108" stroke="#222" stroke-width="1" />
+                <text x="50" y="70" font-size="9.5" font-weight="bold">H</text>
+                <line x1="104" y1="76" x2="130" y2="76" stroke="#444" stroke-width="0.8" />
+                <line x1="104" y1="98" x2="118" y2="98" stroke="#444" stroke-width="0.8" />
+                <line x1="104" y1="122" x2="130" y2="122" stroke="#444" stroke-width="0.8" />
+                <line x1="113" y1="76" x2="113" y2="98" stroke="#222" stroke-width="1" />
+                <text x="106" y="90" font-size="9">P</text>
+                <line x1="126" y1="76" x2="126" y2="122" stroke="#222" stroke-width="1" />
+                <text x="129" y="103" font-size="9.5" font-weight="bold">C</text>
+              </svg>
+            </div>
+
+            <div>
+              <div class="input-row-compact">
+                <span>Chiều cao ống rót H:</span>
+                <input type="number" id="inpH" value="450" min="50" step="10" oninput="recalculateAll()" />
+                <span>mm</span>
+                <span style="font-size:10.5px; color:#555;">Mặt bát &rarr; đáy</span>
+              </div>
+              <div class="input-row-compact">
+                <span>Chiều cao vật đúc C:</span>
+                <input type="number" id="inpC" value="280" min="10" step="10" oninput="recalculateAll()" />
+                <span>mm</span>
+                <span style="font-size:10.5px; color:#555;">Tổng cao SP</span>
+              </div>
+              <div class="input-row-compact">
+                <span>Phần trên ingate P:</span>
+                <input type="number" id="inpP" value="240" min="0" step="10" oninput="recalculateAll()" />
+                <span>mm</span>
+                <span style="font-size:10.5px; color:#555;">Dùng khi Side</span>
+              </div>
+              <div class="input-row-compact">
+                <span>Gầu &rarr; khuôn (ht):</span>
+                <input type="number" id="inpHt" value="0" min="0" step="10" oninput="recalculateAll()" />
+                <span>mm</span>
+                <span style="font-size:10.5px; color:#555;">Mặc định = 0</span>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; font-size:11px;">
+                <strong>Kiểu dẫn:</strong>
+                <label style="cursor:pointer;"><input type="radio" name="gateLoc" value="BOTTOM" checked onchange="recalculateAll()" /> Bottom (Đùn)</label>
+                <label style="cursor:pointer;"><input type="radio" name="gateLoc" value="SIDE" onchange="recalculateAll()" /> Side</label>
+                <label style="cursor:pointer;"><input type="radio" name="gateLoc" value="TOP" onchange="recalculateAll()" /> Top</label>
+                <label style="cursor:pointer;"><input type="radio" name="gateLoc" value="DIRECT_H" onchange="recalculateAll()" /> Hef=H</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-row">
+            <span>Điều kiện tổn thất hệ rót (Bảng 8.8):</span>
+            <select class="win-select" id="selMuCondition" style="grid-column: span 3;" onchange="onMuConditionChange()">
+              <option value="0.88">Rót trực tiếp, rất ngắn (&mu; = 0.85 - 0.90)</option>
+              <option value="0.82">Hệ rót đơn giản, runner &lt; 300mm (&mu; = 0.80 - 0.85)</option>
+              <option value="0.75">Hệ rót thông thường Alphaset (&mu; = 0.70 - 0.80)</option>
+              <option value="0.70">Hệ rót dài &gt; 800mm / LF sơn thoáng (&mu; = 0.65 - 0.75)</option>
+              <option value="0.60" selected>Lost Foam thông thường (&mu; = 0.55 - 0.65)</option>
+              <option value="0.50">Lost Foam khó: xốp dày, nhiều hốc (&mu; = 0.45 - 0.55)</option>
+            </select>
+          </div>
+
+          <div class="input-row">
+            <span>Hệ số lưu lượng (&mu;):</span>
+            <input type="number" id="inpMu" value="0.60" min="0.2" max="0.98" step="0.02" readonly oninput="recalculateAll()" />
+            <span>-</span>
+            <label style="display:flex; align-items:center; gap:3px; cursor:pointer; font-size:11px;">
+              <input type="checkbox" id="chkUserMu" onchange="toggleUserField('inpMu', this.checked)" /> Nhập &mu; tùy chỉnh (By user)
+            </label>
+          </div>
+
+          <div class="input-row">
+            <span>Phương pháp tính Thời gian rót:</span>
+            <select class="win-select" id="selPourMethod" style="grid-column: span 3;" onchange="onPourMethodChange()">
+              <option value="VICO_STD" selected>1. Công thức chuẩn VICO: t = S &times; &radic;W (Mục 5.3)</option>
+              <option value="WINWIN">2. Theo quy định Cánh xoắn Win Win (Bảng 5.2 - Tra Qm theo W)</option>
+              <option value="MANUAL_T">3. Nhập trực tiếp Thời gian rót t (giây)</option>
+              <option value="BY_FLOWRATE">4. Nhập trực tiếp Tốc độ rót Qm (kg/s)</option>
+            </select>
+          </div>
+
+          <div class="input-row" id="rowInputS">
+            <span>Hệ số thời gian rót S (Bảng 5.1):</span>
+            <input type="number" id="inpS" value="1.95" min="0.8" max="4.5" step="0.05" oninput="recalculateAll()" />
+            <span>-</span>
+            <span style="font-size:11px; color:#005a9e; font-weight:600;" id="lblSRange">Chuẩn: 1.8 - 2.2</span>
+          </div>
+
+          <div class="input-row" id="rowInputManualT" style="display:none;">
+            <span>Nhập Thời gian rót mong muốn (t):</span>
+            <input type="number" id="inpManualT" value="23.0" min="1" step="0.5" oninput="recalculateAll()" />
+            <span>s</span>
+            <span style="font-size:11px; color:#555;">Thời gian điền đầy</span>
+          </div>
+
+          <div class="input-row" id="rowInputManualQm" style="display:none;">
+            <span>Nhập Tốc độ rót mong muốn (Q<sub>m</sub>):</span>
+            <input type="number" id="inpManualQm" value="6.0" min="0.2" step="0.2" oninput="recalculateAll()" />
+            <span>kg/s</span>
+            <span style="font-size:11px; color:#555;">Lưu lượng khối lượng</span>
+          </div>
+
+          <div class="input-row">
+            <span>Chế độ Tiết diện Choke (Mục 5.6):</span>
+            <input type="number" id="inpUserChokeArea" value="1410.5" min="50" step="10" readonly oninput="recalculateAll()" />
+            <span>mm²</span>
+            <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
+              <label style="cursor:pointer;"><input type="checkbox" id="chkEnforceMinChoke" checked onchange="recalculateAll()" /> Min D40</label>
+              <label style="cursor:pointer;"><input type="checkbox" id="chkUserChoke" onchange="toggleUserField('inpUserChokeArea', this.checked)" /> By user</label>
+            </div>
+          </div>
+
+          <!-- Bảng cấu hình Tỉ lệ, Số nhánh, Hình dạng & W/H của Hệ rót -->
+          <div style="margin-top:6px; border-top:1px solid #ccc; padding-top:5px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+              <strong style="font-size:11.5px; color:#1b4f72;">Cấu hình Tỉ lệ &amp; Hình học Hệ rót (Vùng ô Cam):</strong>
+              <div style="display:flex; gap:3px;">
+                <button class="win-btn" onclick="setGlobalRatio(1, 2, 2)" style="padding:1px 6px; min-height:20px; font-size:10.5px;">1 : 2 : 2 (VICO)</button>
+                <button class="win-btn" onclick="setGlobalRatio(1, 1.5, 1.5)" style="padding:1px 6px; min-height:20px; font-size:10.5px;">1 : 1.5 : 1.5 (LF)</button>
+                <button class="win-btn" onclick="setGlobalRatio(1, 0.75, 0.5)" style="padding:1px 6px; min-height:20px; font-size:10.5px;">1 : 0.75 : 0.5</button>
+                <button class="win-btn" onclick="autoDesignWH()" style="padding:1px 6px; min-height:20px; font-size:10.5px;">Auto W/H</button>
+              </div>
+            </div>
+
+            <table class="config-mini-table">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Tham số cấu hình</th>
+                  <th>Sprue (Ống rót)</th>
+                  <th>Runner (Rãnh)</th>
+                  <th>Ingate (Cửa)</th>
+                  <th>Choke (Hãm)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-hdr">Global ratio (Tỉ lệ)</td>
+                  <td class="orange-edit"><input type="number" id="ratSprue" value="1.0" min="0.2" step="0.1" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="ratRunner" value="1.5" min="0.2" step="0.1" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="ratIngate" value="1.5" min="0.2" step="0.1" oninput="recalculateAll()" /></td>
+                  <td style="background:#e9ecef; font-weight:700;">1.0</td>
+                </tr>
+                <tr>
+                  <td class="row-hdr">No. of (Số lượng)</td>
+                  <td class="orange-edit"><input type="number" id="numSprue" value="1" min="1" step="1" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="numRunner" value="1" min="1" step="1" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="numIngate" value="4" min="1" step="1" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="numChoke" value="1" min="1" step="1" oninput="recalculateAll()" /></td>
+                </tr>
+                <tr>
+                  <td class="row-hdr">Type (Hình dạng)</td>
+                  <td class="orange-edit">
+                    <select id="typeSprue" onchange="recalculateAll()">
+                      <option value="TAPERED" selected>Côn 4%</option>
+                      <option value="CIRCULAR">Tròn Ø</option>
+                      <option value="QUADRATE">Vuông/CN</option>
+                    </select>
+                  </td>
+                  <td class="orange-edit">
+                    <select id="typeRunner" onchange="recalculateAll()">
+                      <option value="QUADRATE" selected>Vuông/CN</option>
+                      <option value="CIRCULAR">Tròn Ø</option>
+                    </select>
+                  </td>
+                  <td class="orange-edit">
+                    <select id="typeIngate" onchange="recalculateAll()">
+                      <option value="QUADRATE">Chữ nhật</option>
+                      <option value="CIRCULAR" selected>Tròn Ø</option>
+                    </select>
+                  </td>
+                  <td class="orange-edit">
+                    <select id="typeChoke" onchange="recalculateAll()">
+                      <option value="CIRCULAR" selected>Tròn Ø</option>
+                      <option value="QUADRATE">Vuông/CN</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="row-hdr">Dimension W/H</td>
+                  <td class="orange-edit"><input type="number" id="whSprue" value="1.0" min="0.2" step="0.1" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="whRunner" value="1.5" min="0.2" step="0.1" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="whIngate" value="3.5" min="0.2" step="0.2" oninput="recalculateAll()" /></td>
+                  <td class="orange-edit"><input type="number" id="whChoke" value="1.0" min="0.2" step="0.1" oninput="recalculateAll()" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </fieldset>
+
+        <!-- BƯỚC 4: NHIỆT ĐỘ RÓT & THÔNG SỐ RIÊNG THEO CÔNG NGHỆ (CHƯƠNG 6) -->
+        <fieldset class="win-group">
+          <legend id="legendStep4">Bước 4. Nhiệt độ rót &amp; Thông số riêng Lost Foam (Chương 5.11 &amp; Chương 6)</legend>
+
+          <div class="input-row">
+            <span>Nhiệt độ rót Đầu - Cuối (Mục 5.11):</span>
+            <input type="text" id="inpPourTemp" value="1480 - 1430" oninput="recalculateAll()" />
+            <span>&deg;C</span>
+            <button class="win-btn no-print" onclick="openModal('modalPourTips')" style="padding:1px 8px;">Pouring tips</button>
+          </div>
+
+          <!-- Lost Foam Specific Inputs -->
+          <div id="inputsLostFoam">
+            <div class="input-row">
+              <span>Tỷ trọng xốp EPS &amp; Độ dày sơn:</span>
+              <input type="text" id="inpLfEps" value="EPS 20-22 kg/m³" oninput="recalculateAll()" />
+              <span>-</span>
+              <input type="text" id="inpLfCoating" value="Sơn 1.2-1.8mm (Sấy &ge;8h)" oninput="recalculateAll()" />
+            </div>
+            <div class="input-row" style="margin-bottom:0;">
+              <span>Áp suất âm chân không (bar):</span>
+              <input type="text" id="inpLfVacuum" value="0.30 - 0.38 bar" oninput="recalculateAll()" />
+              <span>bar</span>
+              <label style="display:flex; align-items:center; gap:3px; font-size:11px; cursor:pointer;" title="Cho phép vận tốc ingate 0.8 - 1.0 m/s đối với chi tiết mỏng/dài, sơn thoáng">
+                <input type="checkbox" id="chkThinFastLF" onchange="recalculateAll()" /> SP mỏng/dài (v &le; 1.0 m/s)
+              </label>
+            </div>
+          </div>
+
+          <!-- Alphaset Specific Inputs -->
+          <div id="inputsAlphaset" style="display:none;">
+            <div class="input-row">
+              <span>Cát nhựa Alphaset &amp; Sơn khuôn:</span>
+              <input type="text" id="inpAlSand" value="LOI &lt; 2.5%" oninput="recalculateAll()" />
+              <span>-</span>
+              <input type="text" id="inpAlCoating" value="Sơn cồn Zircon, khò khô" oninput="recalculateAll()" />
+            </div>
+            <div class="input-row" style="margin-bottom:0;">
+              <span>Thông khí lõi &amp; Thời gian rỡ khuôn:</span>
+              <input type="text" id="inpAlVent" value="Đậu hơi Ø10-25" oninput="recalculateAll()" />
+              <span>-</span>
+              <input type="text" id="inpAlShakeout" value="Rỡ khuôn: 6 - 12h" oninput="recalculateAll()" />
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- KHU VỰC 2 (CỘT PHẢI): HIỂN THỊ KẾT QUẢ TÍNH TOÁN (OUTPUT / RESULTS ZONE)  -->
+      <!-- ========================================================================= -->
+      <div class="zone-box output-zone">
+        <div class="zone-banner output-banner">
+          <span>KHU VỰC 2: HIỂN THỊ KẾT QUẢ TÍNH TOÁN &amp; KIỂM TRA TIÊU CHUẨN VICO</span>
+          <span class="zone-banner-sub">Tự động cập nhật theo thời gian thực</span>
+        </div>
+
+        <!-- KẾT QUẢ 1: CÂN CÔNG NGHỆ, THU HỒI (YIELD %) & THỦY LỰC RÓT -->
+        <fieldset class="win-group">
+          <legend>Kết quả 1. Tổng hợp Cân Công Nghệ, Tỉ lệ Thu hồi (Yield %) &amp; Thủy lực Rót</legend>
+
+          <!-- 4 KPI Summary Cards -->
+          <div class="kpi-cards-grid">
+            <div class="kpi-card">
+              <div class="kpi-title">Tổng KL rót W<sub>tổng</sub></div>
+              <div class="kpi-val" id="kpiTotalW">139.00 kg</div>
+              <div class="kpi-sub" id="kpiWeightBreakdown">SP: 80.0 | Đậu: 40.9 | Rót: 18.1</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Tỉ lệ thu hồi (Yield %)</div>
+              <div class="kpi-val" id="kpiYield" style="color:#145a32;">57.6 %</div>
+              <div class="kpi-sub" id="kpiTotalVol">Thể tích: 19,577,465 mm³</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Tỉ lệ nhân co mẫu VICO</div>
+              <div class="kpi-val" id="kpiShrinkage">1.022 (2.2%)</div>
+              <div class="kpi-sub" id="kpiThicknessClass">Phân loại: Thành dày (&gt;40mm)</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Thời gian &amp; Tốc độ rót</div>
+              <div class="kpi-val" id="kpiPourTimeRate">23.0 s | 6.05 kg/s</div>
+              <div class="kpi-sub" id="kpiRatePerGate">Lưu lượng: 1.51 kg/s / ingate</div>
+            </div>
+          </div>
+
+          <!-- Hydraulic & Velocity Check Box (Like Top-Right of GUI.jfif) -->
+          <div class="out-2col">
+            <div>
+              <div class="out-row">
+                <span>Pouring time (Thời gian rót t):</span>
+                <input type="text" id="outPourTime" readonly value="22.99" />
+                <span>s</span>
+                <span style="font-size:10.5px; color:#444;" id="lblPourTimeFormula">t = S &times; &radic;W</span>
+              </div>
+              <div class="out-row">
+                <span>Effective sprue height (H<sub>ef</sub>):</span>
+                <input type="text" id="outHef" readonly value="31.00" />
+                <span>cm</span>
+                <span style="font-size:10.5px; color:#444;" id="lblHefFormula">Bottom: H - C/2</span>
+              </div>
+              <div class="out-row">
+                <span>Choke area F<sub>choke</sub> (Thiết kế):</span>
+                <input type="text" id="outChokeArea" readonly value="1410.5" />
+                <span>mm²</span>
+                <span style="font-size:10.5px; color:#444;" id="lblChokeTheory">LT: 1410.5 mm²</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="out-row">
+                <span><strong>Velocity of Ingate (Vận tốc cửa):</strong></span>
+                <input type="text" id="outIngateVelHighlight" readonly value="0.677" />
+                <span>m/s</span>
+                <span style="font-size:11px; font-weight:700;" id="lblVelStatus">Đạt chuẩn VICO</span>
+              </div>
+              <div class="out-row">
+                <span>Maximum velocity (Ngưỡng chuẩn):</span>
+                <input type="text" id="outMaxVelRef" readonly value="0.50 - 0.80" />
+                <span>m/s</span>
+                <span style="font-size:10.5px; color:#444;">Bảng 5.5 &amp; 8.3</span>
+              </div>
+              <div class="out-row">
+                <span>Choke flow rate (Tốc độ rót Q<sub>m</sub>):</span>
+                <input type="text" id="outFlowRateQm" readonly value="6.046" />
+                <span>kg/s</span>
+                <span style="font-size:10.5px; color:#444;" id="lblQmPerIngate">1.51 kg/s/cửa</span>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- KẾT QUẢ 2: BẢNG MA TRẬN KÍCH THƯỚC HỆ THỐNG RÓT & CHI TIẾT PHỤ TRỢ -->
+        <fieldset class="win-group">
+          <legend>Kết quả 2. Bảng Ma trận Kích thước Hệ thống rót (Sprue | Runner | Ingate | Choke) &amp; Phụ trợ</legend>
+
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th style="width:195px; text-align:left;">Thông số kết quả</th>
+                <th>Sprue (Ống rót)</th>
+                <th>Runner (Rãnh ngang)</th>
+                <th>Ingate (Cửa vào SP)</th>
+                <th>Choke (Tiết diện hãm)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="row-label">Global ratio (Tỉ lệ tiết diện)</td>
+                <td class="cell-orange-ro" id="dispRatSprue">1.00</td>
+                <td class="cell-orange-ro" id="dispRatRunner">1.50</td>
+                <td class="cell-orange-ro" id="dispRatIngate">1.50</td>
+                <td class="cell-blue" id="dispRatChoke">1.00</td>
+              </tr>
+
+              <tr class="spacer-row"><td colspan="5"></td></tr>
+
+              <tr>
+                <td class="row-label">Total section area (mm²)</td>
+                <td class="cell-blue" id="totAreaSprue">1410.5</td>
+                <td class="cell-blue" id="totAreaRunner">2115.8</td>
+                <td class="cell-blue" id="totAreaIngate">2115.8</td>
+                <td class="cell-blue" id="totAreaChoke">1410.5</td>
+              </tr>
+
+              <tr>
+                <td class="row-label">No. of (Số lượng nhánh/cửa)</td>
+                <td class="cell-orange-ro" id="dispNumSprue">1</td>
+                <td class="cell-orange-ro" id="dispNumRunner">1</td>
+                <td class="cell-orange-ro" id="dispNumIngate">4</td>
+                <td class="cell-orange-ro" id="dispNumChoke">1</td>
+              </tr>
+
+              <tr>
+                <td class="row-label">Each section area (mm²)</td>
+                <td class="cell-blue" id="eachAreaSprue">1410.5</td>
+                <td class="cell-blue" id="eachAreaRunner">2115.8</td>
+                <td class="cell-blue" id="eachAreaIngate">528.9</td>
+                <td class="cell-blue" id="eachAreaChoke">1410.5</td>
+              </tr>
+
+              <tr>
+                <td class="row-label">Kiểm tra Min VICO (Bảng 8.1)</td>
+                <td class="cell-blue ok-green-box" id="minCheckSprue">Côn 4% (&ge;D40)</td>
+                <td class="cell-blue" id="minCheckRunner">&ge; 1600 (40x40)</td>
+                <td class="cell-blue" id="minCheckIngate">&ge; 314 (Ø20)</td>
+                <td class="cell-blue" id="minCheckChoke">&ge; 1256 (Ø40)</td>
+              </tr>
+
+              <tr>
+                <td class="row-label">Type (Hình dạng tiết diện)</td>
+                <td class="cell-blue" id="dispTypeSprue">Tapered 4%</td>
+                <td class="cell-blue" id="dispTypeRunner">Quadrate</td>
+                <td class="cell-blue" id="dispTypeIngate">Circular</td>
+                <td class="cell-blue" id="dispTypeChoke">Circular</td>
+              </tr>
+
+              <tr class="spacer-row"><td colspan="5"></td></tr>
+
+              <tr>
+                <td class="row-label">Dimension: W/H</td>
+                <td class="cell-orange-ro" id="dispWhSprue">1.0</td>
+                <td class="cell-orange-ro" id="dispWhRunner">1.5</td>
+                <td class="cell-orange-ro" id="dispWhIngate">3.5</td>
+                <td class="cell-orange-ro" id="dispWhChoke">1.0</td>
+              </tr>
+
+              <tr>
+                <td class="row-label">Dimension: Width / Ø<sub>đáy</sub> (mm)</td>
+                <td class="cell-blue" id="dimWSprue">Ø42.4</td>
+                <td class="cell-blue" id="dimWRunner">56.3</td>
+                <td class="cell-blue" id="dimWIngate">Ø26.0</td>
+                <td class="cell-blue" id="dimWChoke">Ø42.4</td>
+              </tr>
+
+              <tr>
+                <td class="row-label">Dimension: Height / Ø<sub>đỉnh</sub> (mm)</td>
+                <td class="cell-blue" id="dimHSprue">Ø60.4 (Côn 4%)</td>
+                <td class="cell-blue" id="dimHRunner">37.6</td>
+                <td class="cell-blue" id="dimHIngate">Cao: 30 - 40</td>
+                <td class="cell-blue" id="dimHChoke">Ø42.4</td>
+              </tr>
+
+              <tr class="spacer-row"><td colspan="5"></td></tr>
+
+              <tr>
+                <td class="row-label">Flow velocity (Vận tốc m/s)</td>
+                <td class="cell-blue" id="velSprue">0.604</td>
+                <td class="cell-blue" id="velRunner">0.402</td>
+                <td class="cell-blue" id="velIngate">0.402</td>
+                <td class="cell-blue" id="velChoke">0.604</td>
+              </tr>
+
+              <tr>
+                <td class="row-label">Reynolds's number (Re)</td>
+                <td class="cell-blue" id="reSprue">36,520</td>
+                <td class="cell-blue" id="reRunner">25,410</td>
+                <td class="cell-blue" id="reIngate">14,910</td>
+                <td class="cell-blue" id="reChoke">36,520</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 3 Auxiliary Sizing Outputs (Sprue Well, Runner Extension, Slag Trap) -->
+          <div style="margin-top:6px; display:grid; grid-template-columns: repeat(3, 1fr); gap:6px;">
+            <div style="background:#e8f0f8; border:1px solid #b5c7de; padding:5px 8px;">
+              <div style="font-weight:700; color:#1b4f72;">1. Giếng đáy (Sprue Well - Mục 5.7)</div>
+              <div id="outSprueWell" style="margin-top:2px; font-weight:700; font-size:12.5px;">Ø65 x Cao 65 mm</div>
+              <div style="font-size:10.5px; color:#444;">Runner đặt cách đáy giếng ~20 mm</div>
+            </div>
+            <div style="background:#e8f0f8; border:1px solid #b5c7de; padding:5px 8px;">
+              <div style="font-weight:700; color:#1b4f72;">2. Đuôi Runner (Extension - 5.10.2)</div>
+              <div id="outRunnerExt" style="margin-top:2px; font-weight:700; font-size:12.5px;">Dài 115÷140 x 56 x 38 mm</div>
+              <div style="font-size:10.5px; color:#444;">Dài = (2 &divide; 2.5) W<sub>runner</sub> để hứng dòng đầu</div>
+            </div>
+            <div style="background:#e8f0f8; border:1px solid #b5c7de; padding:5px 8px;">
+              <div style="font-weight:700; color:#1b4f72;">3. Bẫy xỉ (Slag Trap - 5.10.3)</div>
+              <div id="outSlagTrap" style="margin-top:2px; font-weight:700; font-size:12.5px;">Dài 85 x Rộng 62 x Sâu 56 mm</div>
+              <div style="font-size:10.5px; color:#444;">Dài (1&divide;2)W, Sâu (1.2&divide;2)H<sub>runner</sub></div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- KẾT QUẢ 3: KÍCH THƯỚC ĐẬU BÙ NGÓT, CỔ ĐẬU & KHOẢNG CÁCH CẤP BÙ (CHƯƠNG 4) -->
+        <fieldset class="win-group">
+          <legend>Kết quả 3. Kích thước Đậu bù ngót, Cổ đậu, Đậu rỗng Lost Foam &amp; Khoảng cách cấp bù (Chương 4)</legend>
+
+          <div class="riser-result-layout">
+            <!-- Visual Schematic of Calculated Riser -->
+            <div class="diagram-box" style="min-height:170px;">
+              <svg width="142" height="158" viewBox="0 0 145 175">
+                <rect x="35" y="16" width="66" height="68" fill="#f4b084" stroke="#222" stroke-width="1.3" />
+                <rect id="svgHollowCore" x="50" y="16" width="36" height="50" fill="#ffffff" stroke="#c0392b" stroke-width="1" stroke-dasharray="3,2" />
+                <text id="svgHollowText" x="53" y="45" font-size="8.5" fill="#c0392b" font-weight="bold">Rỗng LF</text>
+                <polygon points="35,84 101,84 86,102 50,102" fill="#f4b084" stroke="#222" stroke-width="1.2" />
+                <rect x="50" y="102" width="36" height="18" fill="#e67e22" stroke="#222" stroke-width="1.2" />
+                <polygon id="svgBreakerL" points="50,113 55,116 50,119" fill="#fff" stroke="#c00" stroke-width="1" />
+                <polygon id="svgBreakerR" points="86,113 81,116 86,119" fill="#fff" stroke="#c00" stroke-width="1" />
+                <rect x="20" y="120" width="96" height="34" fill="#bdd7ee" stroke="#222" stroke-width="1.3" />
+                <circle cx="68" cy="137" r="12" fill="rgba(230,0,0,0.28)" stroke="#c00" stroke-width="1" stroke-dasharray="2,2" />
+                <text x="53" y="140" font-size="8.5" fill="#900" font-weight="bold">Hotspot</text>
+                <text x="56" y="12" font-size="9.5" font-weight="bold">Dđ</text>
+                <text x="106" y="55" font-size="9.5" font-weight="bold">Hđ</text>
+                <text x="90" y="114" font-size="9" fill="#000">Dc x Hc</text>
+              </svg>
+              <div style="font-size:10px; color:#555; text-align:center;" id="lblRiserNote">Đậu rỗng xốp dày 35-40mm</div>
+            </div>
+
+            <!-- Riser Calculated Outputs Table -->
+            <div>
+              <table class="matrix-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; width:195px;">Hạng mục Đậu bù ngót</th>
+                    <th>Giá trị tính toán</th>
+                    <th>Tiêu chuẩn / Đánh giá VICO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="row-label">Modulus Tâm nhiệt &amp; Đậu</td>
+                    <td class="cell-blue" id="resModulusPair">M<sub>hot</sub> = 20.5 mm &rarr; M<sub>đ</sub> = 25.6 mm</td>
+                    <td class="cell-blue ok-green-box" id="resModulusCheck">Đạt (M<sub>đ</sub> = 1.25 M<sub>hot</sub> &ge; 1.2)</td>
+                  </tr>
+                  <tr>
+                    <td class="row-label">Kích thước Đậu (D<sub>đ</sub> &times; H<sub>đ</sub>)</td>
+                    <td class="cell-blue" id="outRiserDim" style="font-size:12.5px; font-weight:700; color:#004085;">Ø128 x 150 mm (4 đậu)</td>
+                    <td class="cell-blue" id="resSharedNote">1 đậu / 1 vùng nóng (KL: 54.8 kg)</td>
+                  </tr>
+                  <tr>
+                    <td class="row-label">Lõi rỗng &amp; Đè cát Lost Foam</td>
+                    <td class="cell-blue" id="lblHollowDim">Khoét rỗng: Ø53 mm (Thành xốp ~38mm)</td>
+                    <td class="cell-blue ok-green-box" id="outLfRiserHeadCheck">Cao &ge; 150 mm (Đạt lực đè cát)</td>
+                  </tr>
+                  <tr>
+                    <td class="row-label">Kích thước Cổ đậu (D<sub>c</sub> &times; H<sub>c</sub>)</td>
+                    <td class="cell-blue" id="outNeckDim">Ø77 x Cao 23 mm (Bo vát H<sub>bo</sub>: 25-35mm)</td>
+                    <td class="cell-blue" id="resNeckGrooveCheck">Bắt buộc khứa rãnh đập sâu 5mm (Gang Cr)</td>
+                  </tr>
+                  <tr>
+                    <td class="row-label">Khoảng cách cấp bù (FD - 4.7)</td>
+                    <td class="cell-blue" colspan="2" id="outFeedingDist">1 Đậu&rarr;mép (4.5g): 185 mm | 2 Đậu đối diện (4g): 164 mm | 2 Đậu + Chill giữa (9g+C): 489 mm</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </fieldset>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Window Footer / Live Status & Alerts -->
+  <div class="win-footer">
+    <div class="status-alerts" id="footerAlerts">
+      <span class="badge-alert badge-green">Thiết kế hợp lệ theo tiêu chuẩn VICO</span>
+    </div>
+    <div class="no-print" style="display:flex; gap:8px;">
+      <button class="win-btn" onclick="openModal('modalReport')" style="font-weight:700; color:#004085;">Xuất Phiếu Thiết Kế &amp; Checklist (Chương 9)</button>
+      <button class="win-btn" onclick="window.print()">In màn hình (Print)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL 1: USER FORMULA (CÔNG THỨC VICO) ================= -->
+<div class="modal-backdrop" id="modalFormula">
+  <div class="modal-window">
+    <div class="win-titlebar">
+      <div class="win-titlebar-text">Tổng hợp Công thức Tính toán Hệ thống rót &amp; Đậu bù ngót (Tài liệu VICO)</div>
+      <button class="win-btn" onclick="closeModal('modalFormula')">Đóng (X)</button>
+    </div>
+    <div class="modal-body">
+      <h3 style="margin-top:0; color:#1b4f72;">1. Công thức tính Đậu bù ngót &amp; Cổ đậu (Chương 4)</h3>
+      <ul>
+        <li><strong>Modulus tâm nhiệt tính nhanh (Mục 4.3):</strong> <code>M_hot &approx; t / 2</code> (với <code>t</code> là đường kính đường tròn nội tiếp vùng nóng) hoặc <code>M_hot = V / A</code>.</li>
+        <li><strong>Modulus đậu bù ngót:</strong> <code>M_đ = (1.2 &divide; 1.6) &times; M_hot</code>.</li>
+        <li><strong>Đường kính đậu D<sub>đ</sub> theo tỉ lệ H<sub>đ</sub>/D<sub>đ</sub>:</strong>
+          <ul>
+            <li>Đậu cần chiều cao, gồm phần vát/chân (<code>H_đ = 1.5 D_đ</code>): <code>D_đ = 5.33 &times; M_đ</code></li>
+            <li>Đậu tập trung tâm nhiệt, gồm phần vát/chân (<code>H_đ = 1.0 D_đ</code>): <code>D_đ = 6.00 &times; M_đ</code></li>
+            <li>Đậu không tính phần vát/chân (<code>H_đ = 1.5 D_đ</code>): <code>D_đ = 4.67 &times; M_đ</code></li>
+            <li>Đậu không tính phần vát/chân (<code>H_đ = 1.0 D_đ</code>): <code>D_đ = 5.00 &times; M_đ</code></li>
+          </ul>
+        </li>
+        <li><strong>Đậu chung nuôi n sản phẩm/hotspot (Mục 4.5):</strong> <code>D_đc = &radic;[3]{n} &times; D_đ</code>; <code>H_đc = (0.8 &divide; 1.5) &times; D_đc</code>.</li>
+        <li><strong>Cổ đậu (Mục 4.4):</strong> <code>D_c = (0.5 &divide; 0.7) D_đ</code> (chuẩn lấy <code>0.6 D_đ</code>); <code>H_c = (0.3 &divide; 0.5) D_c</code> (chuẩn lấy <code>0.3 D_c</code>); Bo vát <code>H_bo = 25 &divide; 35 mm</code>. Hàng <strong>Gang Crom</strong> bắt buộc làm rãnh khứa đập sâu 5mm, cách sản phẩm 2mm.</li>
+        <li><strong>Đậu rỗng Lost Foam (Mục 4.10):</strong> Chiều dày thành xốp đậu <code>35 &divide; 40 mm</code>; mặt đậu cao hơn đỉnh sản phẩm ít nhất <code>150 mm</code> (hàng nhỏ/mỏng &ge; <code>100 mm</code>).</li>
+      </ul>
+
+      <h3 style="color:#1b4f72;">2. Công thức tính Hệ thống rót (Chương 5)</h3>
+      <ul>
+        <li><strong>Tổng khối lượng rót (Mục 5.3):</strong> <code>W = W_sp + W_đậu + W_hệ_rót</code> (Tạm tính <code>W_hệ_rót = 15% &times; (W_sp + W_đậu)</code>).</li>
+        <li><strong>Tỉ lệ thu hồi (Yield %):</strong> <code>Yield% = (W_sp / W_tổng) &times; 100%</code>.</li>
+        <li><strong>Thời gian rót chuẩn:</strong> <code>t = S &times; &radic;W</code> (giây) &mdash; hoặc tra theo Bảng 5.2 cho dòng Cánh xoắn Win Win.</li>
+        <li><strong>Tốc độ rót (Lưu lượng khối lượng):</strong> <code>Q_m = W / t</code> (kg/s); Trên 1 ingate: <code>Q_m1 = Q_m / n_ingate</code>.</li>
+        <li><strong>Tiết diện Choke (Mục 5.6):</strong> <code>F_choke = W / (&rho; &times; &mu; &times; t &times; &radic;(2 &times; g &times; H_ef))</code>. Tiết diện tối thiểu VICO: <code>D40 = 1256 mm²</code>.</li>
+        <li><strong>Vận tốc qua Ingate (Mục 5.5):</strong> <code>v = Q_m / (&rho; &times; A_ingate_tổng)</code> (m/s). Khuyến nghị Lost Foam: <code>0.5 - 0.8 m/s</code> (mỏng/dài: <code>0.8 - 1.0 m/s</code>); Alphaset: <code>0.6 - 1.2 m/s</code>. Trên <code>1.2 m/s</code>: Rủi ro cao (Báo đỏ).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL 2: TIPS & BẢNG TRA NHANH CHƯƠNG 8 ================= -->
+<div class="modal-backdrop" id="modalTips">
+  <div class="modal-window">
+    <div class="win-titlebar">
+      <div class="win-titlebar-text">Bảng Tra Nhanh Tiêu Chuẩn Nội Bộ VICO (Chương 5 &amp; Chương 8)</div>
+      <button class="win-btn" onclick="closeModal('modalTips')">Đóng (X)</button>
+    </div>
+    <div class="modal-body">
+      <h4 style="margin:0 0 6px 0; color:#1b4f72;">Bảng 5.1 &amp; 8.2: Hệ số S chọn thời gian rót (t = S &times; &radic;W)</h4>
+      <table class="vico-table">
+        <thead>
+          <tr><th>Công nghệ / Vật liệu</th><th>S tham khảo</th><th>Khi chọn thấp</th><th>Khi chọn cao</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Alphaset - Gang xám/trắng</td><td><strong>1.4 - 1.8</strong></td><td>Chi tiết mỏng, dài, cần điền đầy nhanh</td><td>Chi tiết dày, cần rót êm, hạn chế xói</td></tr>
+          <tr><td>Alphaset - Gang Crom</td><td><strong>1.5 - 1.9</strong></td><td>Thành trung bình, đường chảy xa</td><td>Thành dày, yêu cầu ít xói/tạp (1.8-1.9)</td></tr>
+          <tr><td>Alphaset - Thép đúc</td><td><strong>1.8 - 2.6</strong></td><td>Thành mỏng hoặc yêu cầu điền đầy nhanh</td><td>Thành dày, sản phẩm lớn, cần giảm rối</td></tr>
+          <tr><td>Lost Foam - Gang Crom</td><td><strong>1.8 - 2.2</strong></td><td>Sơn thoáng, sản phẩm cần điền đầy nhanh</td><td>Thành dày &ge;40mm (bắt đầu 1.9-2.0), nhiều xốp</td></tr>
+          <tr><td>Lost Foam - Thép đúc</td><td><strong>2.0 - 3.0</strong></td><td>Sản phẩm mỏng, đường chảy dài</td><td>Sản phẩm dày, nhiều hotspot, khí xốp lớn</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin:10px 0 6px 0; color:#1b4f72;">Bảng 5.2: Quy định Vận tốc rót &amp; Áp suất âm cho hàng Cánh xoắn Win Win (01 SP / 01 ống rót)</h4>
+      <table class="vico-table">
+        <thead>
+          <tr><th>TT</th><th>Khối lượng công nghệ W (kg)</th><th>Áp suất âm (bar)</th><th>Vận tốc rót Q<sub>m</sub> (kg/s)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Dưới 100 kg</td><td>0.25</td><td>3.5 kg/s</td></tr>
+          <tr><td>2</td><td>Từ 100 &rarr; 200 kg</td><td>0.28</td><td>4.0 kg/s</td></tr>
+          <tr><td>3</td><td>Từ 200 &rarr; 300 kg</td><td>0.30</td><td>4.5 kg/s</td></tr>
+          <tr><td>4</td><td>Từ 300 &rarr; 400 kg</td><td>0.32</td><td>5.0 - 5.5 kg/s</td></tr>
+          <tr><td>5</td><td>Từ 400 &rarr; 600 kg</td><td>0.35</td><td>6.0 - 6.5 kg/s</td></tr>
+          <tr><td>6</td><td>Từ 600 &rarr; 700 kg</td><td>0.38</td><td>7.0 - 7.5 kg/s</td></tr>
+          <tr><td>7</td><td>Trên 700 kg</td><td>0.38</td><td>8.0 - 9.0 kg/s</td></tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin:10px 0 6px 0; color:#1b4f72;">Bảng 8.1 &amp; 8.7: Kích thước tối thiểu hệ rót &amp; Hệ số thu hồi (Yield %)</h4>
+      <table class="vico-table">
+        <thead>
+          <tr><th>Hạng mục</th><th>Giá trị chuẩn VICO</th><th>Loại sản phẩm</th><th>Yield thường gặp</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Choke tròn min</td><td><strong>D40 = 1256 mm²</strong></td><td>Chi tiết đơn giản, ít đậu</td><td>70 - 85%</td></tr>
+          <tr><td>Runner vuông min</td><td><strong>40 &times; 40 = 1600 mm²</strong></td><td>Thép đúc thông thường</td><td>55 - 75%</td></tr>
+          <tr><td>Ingate tròn min</td><td><strong>D20 = 314 mm²</strong> (Cao 30-40mm)</td><td>Thép Mn, Cr, chi tiết phức tạp</td><td>40 - 65%</td></tr>
+          <tr><td>Sprue well (Giếng đáy)</td><td><strong>D60 &times; 60 mm</strong> (Runner cách đáy 20mm)</td><td>Lost Foam tối ưu tốt</td><td>60 - 85%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL 3: POURING TIPS (MỤC 5.11) ================= -->
+<div class="modal-backdrop" id="modalPourTips">
+  <div class="modal-window" style="max-width:650px;">
+    <div class="win-titlebar">
+      <div class="win-titlebar-text">Hướng dẫn chọn Nhiệt độ rót (Mục 5.11 - Tài liệu VICO)</div>
+      <button class="win-btn" onclick="closeModal('modalPourTips')">Đóng (X)</button>
+    </div>
+    <div class="modal-body">
+      <table class="vico-table">
+        <thead>
+          <tr><th>Yếu tố</th><th>Ảnh hưởng &amp; Khuyến nghị VICO</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Vật liệu</strong></td><td>Quyết định nhiệt độ Liquidus, độ chảy loãng. Gang Crom thường rót đầu ~1460-1510&deg;C, cuối &ge;1420&deg;C; Thép đúc ~1540-1600&deg;C.</td></tr>
+          <tr><td><strong>Chiều dày</strong></td><td>Thành mỏng (&lt;15mm) cần nhiệt cao hơn; thành dày (&gt;40mm) tránh quá nhiệt gây rỗ co, ngót và cháy cát.</td></tr>
+          <tr><td><strong>Lost Foam</strong></td><td>Cần đủ nhiệt để phân hủy xốp EPS, nhưng quá cao dễ sinh khí mạnh, đọng carbon, cháy cát/thấm thép.</td></tr>
+          <tr><td><strong>Alphaset</strong></td><td>Quá cao dễ xói cát, cháy cát, tăng khí nhựa; quá thấp dễ cold shut / thiếu cạnh.</td></tr>
+        </tbody>
+      </table>
+      <p style="margin:6px 0 0 0; font-size:11.5px; color:#900;"><strong>Quy tắc chốt nhiệt:</strong> Trong phiếu công nghệ phải ghi rõ nhiệt độ đầu rót, nhiệt độ cuối rót cho phép và điều kiện đo.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL 4: PHIẾU THIẾT KẾ CÔNG NGHỆ CHUẨN (CHƯƠNG 9) ================= -->
+<div class="modal-backdrop" id="modalReport">
+  <div class="modal-window">
+    <div class="win-titlebar">
+      <div class="win-titlebar-text">Biểu mẫu Đầu ra: Phiếu Thiết kế Công nghệ Chuẩn &amp; Checklist Phê duyệt (Chương 9 VICO)</div>
+      <div style="display:flex; gap:6px;">
+        <button class="win-btn" onclick="window.print()" style="font-weight:700; color:#005a9e;">In Phiếu Công Nghệ</button>
+        <button class="win-btn" onclick="closeModal('modalReport')">Đóng (X)</button>
+      </div>
+    </div>
+    <div class="modal-body" id="printableReportArea">
+      <div style="text-align:center; margin-bottom:10px; border-bottom:2px solid #1b4f72; padding-bottom:6px;">
+        <div style="font-weight:700; font-size:14px; color:#1b4f72;">CÔNG TY TNHH THẮNG LỢI / VICO CASTING</div>
+        <div style="font-weight:700; font-size:15px; margin-top:2px;">PHIẾU THIẾT KẾ CÔNG NGHỆ ĐÚC &amp; CHECKLIST PHÊ DUYỆT (MỤC 9.1 &amp; 9.2)</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
+        <div><strong>Tên / Mã sản phẩm:</strong> <input type="text" id="repProdName" value="Sản phẩm đúc VICO" style="width:170px; text-align:left;" /></div>
+        <div><strong>Người thiết kế:</strong> <input type="text" id="repDesigner" value="Kỹ sư Công nghệ" style="width:150px; text-align:left;" /></div>
+        <div><strong>Ngày lập:</strong> <span id="repDate"></span></div>
+      </div>
+
+      <table class="vico-table" id="repTableSummary"></table>
+
+      <h4 style="margin:10px 0 5px 0; color:#1b4f72;">9.2. Checklist 12 Điểm Phê Duyệt Thiết Kế Bắt Buộc</h4>
+      <table class="vico-table" id="repChecklistTable"></table>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; text-align:center; margin-top:16px; font-weight:600;">
+        <div>KỸ SƯ THIẾT KẾ<br/><br/><br/>____________________</div>
+        <div>TRƯỞNG / PHÓ PHÒNG KT<br/><br/><br/>____________________</div>
+        <div>GIÁM ĐỐC KỸ THUẬT<br/><br/><br/>____________________</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ================= VICO KNOWLEDGE BASE =================
+  const ALLOY_DB = {
+    GANG_CROM: {
+      name: "Gang Crom (Cr cao)",
+      shrinkLF: "1.022 (2.2%)",
+      shrinkAlpha: "1.022 (2.2%)",
+      density: 7100,
+      sRangeLF: [1.8, 2.2],
+      sDefaultLF: 1.95,
+      sRangeAlpha: [1.5, 1.9],
+      sDefaultAlpha: 1.75,
+      tempLF: "1480 - 1430",
+      tempAlpha: "1460 - 1410",
+      needNeckGroove: true
+    },
+    THEP_MN: {
+      name: "Thép Mangan (Mn13Cr2)",
+      shrinkLF: "1.025 - 1.027 (2.5-2.7%)",
+      shrinkAlpha: "1.025 - 1.028 (2.5-2.8%)",
+      density: 7200,
+      sRangeLF: [2.0, 3.0],
+      sDefaultLF: 2.35,
+      sRangeAlpha: [1.8, 2.6],
+      sDefaultAlpha: 2.1,
+      tempLF: "1540 - 1490",
+      tempAlpha: "1530 - 1480",
+      needNeckGroove: false
+    },
+    THEP_DEO: {
+      name: "Thép Dẻo (SCW450/ZG230-450)",
+      shrinkLF: "1.022 (2.2%)",
+      shrinkAlpha: "1.022 (2.2%)",
+      density: 7050,
+      sRangeLF: [2.0, 3.0],
+      sDefaultLF: 2.4,
+      sRangeAlpha: [1.8, 2.6],
+      sDefaultAlpha: 2.15,
+      tempLF: "1580 - 1530",
+      tempAlpha: "1565 - 1520",
+      needNeckGroove: false
+    },
+    THEP_CROM: {
+      name: "Thép Hợp kim Cr-Mo",
+      shrinkLF: "1.020 (2.0%)",
+      shrinkAlpha: "1.020 (2.0%)",
+      density: 7100,
+      sRangeLF: [2.0, 3.0],
+      sDefaultLF: 2.35,
+      sRangeAlpha: [1.8, 2.6],
+      sDefaultAlpha: 2.1,
+      tempLF: "1560 - 1515",
+      tempAlpha: "1550 - 1500",
+      needNeckGroove: false
+    },
+    CHIU_NHIET: {
+      name: "Thép Chịu nhiệt",
+      shrinkLF: "1.025 (2.5%)",
+      shrinkAlpha: "1.025 (2.5%)",
+      density: 7150,
+      sRangeLF: [2.0, 3.0],
+      sDefaultLF: 2.3,
+      sRangeAlpha: [1.8, 2.6],
+      sDefaultAlpha: 2.05,
+      tempLF: "1560 - 1510",
+      tempAlpha: "1550 - 1495",
+      needNeckGroove: false
+    },
+    GANG_XAM: {
+      name: "Gang xám / Gang trắng (FC)",
+      shrinkLF: "1.010 (1.0%)",
+      shrinkAlpha: "1.010 (1.0%)",
+      density: 7000,
+      sRangeLF: [1.6, 2.0],
+      sDefaultLF: 1.8,
+      sRangeAlpha: [1.4, 1.8],
+      sDefaultAlpha: 1.6,
+      tempLF: "1420 - 1370",
+      tempAlpha: "1400 - 1350",
+      needNeckGroove: false
+    }
+  };
+
+  let currentProcess = "LOST_FOAM";
+
+  function getSelectedAlloyKey() {
+    const r = document.querySelector('input[name="alloy"]:checked');
+    return r ? r.value : "GANG_CROM";
+  }
+
+  function switchProcess(proc) {
+    currentProcess = proc;
+    document.getElementById("tabLostFoam").classList.toggle("active", proc === "LOST_FOAM");
+    document.getElementById("tabAlphaset").classList.toggle("active", proc === "ALPHASET");
+
+    const badge = document.getElementById("activeProcessBadge");
+    const legendStep4 = document.getElementById("legendStep4");
+    const inputsLF = document.getElementById("inputsLostFoam");
+    const inputsAl = document.getElementById("inputsAlphaset");
+
+    if (proc === "LOST_FOAM") {
+      badge.textContent = "LOST FOAM PROCESS";
+      badge.style.background = "#1b4f72";
+      legendStep4.textContent = "Bước 4. Nhiệt độ rót & Thông số riêng Lost Foam (Chương 5.11 & Chương 6)";
+      inputsLF.style.display = "block";
+      inputsAl.style.display = "none";
+      if (!document.getElementById("chkUserMu").checked) {
+        document.getElementById("selMuCondition").value = "0.60";
+        document.getElementById("inpMu").value = "0.60";
+      }
+      setGlobalRatio(1.0, 1.5, 1.5, false);
+    } else {
+      badge.textContent = "ALPHASET SAND PROCESS";
+      badge.style.background = "#78281f";
+      legendStep4.textContent = "Bước 4. Nhiệt độ rót & Thông số riêng Alphaset (Chương 5.11 & Chương 6)";
+      inputsLF.style.display = "none";
+      inputsAl.style.display = "block";
+      if (!document.getElementById("chkUserMu").checked) {
+        document.getElementById("selMuCondition").value = "0.75";
+        document.getElementById("inpMu").value = "0.75";
+      }
+      setGlobalRatio(1.0, 2.0, 2.0, false);
+    }
+
+    onAlloyChange();
+  }
+
+  function onAlloyChange() {
+    const key = getSelectedAlloyKey();
+    const info = ALLOY_DB[key];
+    document.getElementById("inpDensity").value = info.density;
+
+    const sDefault = currentProcess === "LOST_FOAM" ? info.sDefaultLF : info.sDefaultAlpha;
+    const sRange = currentProcess === "LOST_FOAM" ? info.sRangeLF : info.sRangeAlpha;
+    document.getElementById("inpS").value = sDefault.toFixed(2);
+    document.getElementById("lblSRange").textContent = `Chuẩn: ${sRange[0].toFixed(1)} - ${sRange[1].toFixed(1)}`;
+    document.getElementById("inpPourTemp").value =
+      currentProcess === "LOST_FOAM" ? info.tempLF : info.tempAlpha;
+
+    recalculateAll();
+  }
+
+  function onMuConditionChange() {
+    if (!document.getElementById("chkUserMu").checked) {
+      document.getElementById("inpMu").value = document.getElementById("selMuCondition").value;
+      recalculateAll();
+    }
+  }
+
+  function onPourMethodChange() {
+    const method = document.getElementById("selPourMethod").value;
+    document.getElementById("rowInputS").style.display = method === "VICO_STD" ? "grid" : "none";
+    document.getElementById("rowInputManualT").style.display = method === "MANUAL_T" ? "grid" : "none";
+    document.getElementById("rowInputManualQm").style.display = method === "BY_FLOWRATE" ? "grid" : "none";
+    recalculateAll();
+  }
+
+  function toggleUserField(id, enabled) {
+    const el = document.getElementById(id);
+    if (enabled) {
+      el.removeAttribute("readonly");
+      el.focus();
+    } else {
+      el.setAttribute("readonly", "readonly");
+      if (id === "inpGatingRatio") el.value = "15.0";
+      if (id === "inpMu") el.value = document.getElementById("selMuCondition").value;
+    }
+    recalculateAll();
+  }
+
+  function onModulusMethodChange() {
+    const mode = document.getElementById("selModulusMethod").value;
+    document.getElementById("rowHotspotT").style.display = mode === "FAST" ? "grid" : "none";
+    document.getElementById("row3DVA").style.display = mode === "3D_VA" ? "grid" : "none";
+    recalculateAll();
+  }
+
+  function onRiserRatioModeChange() {
+    const mode = document.getElementById("selRiserMode").value;
+    const inp = document.getElementById("inpRiserRatio");
+    if (mode === "AUTO_MODULUS") {
+      inp.setAttribute("readonly", "readonly");
+    } else {
+      inp.removeAttribute("readonly");
+    }
+    recalculateAll();
+  }
+
+  function setGlobalRatio(rS, rR, rI, trigger = true) {
+    document.getElementById("ratSprue").value = rS;
+    document.getElementById("ratRunner").value = rR;
+    document.getElementById("ratIngate").value = rI;
+    if (trigger) recalculateAll();
+  }
+
+  function autoDesignWH() {
+    document.getElementById("whSprue").value = "1.0";
+    document.getElementById("whRunner").value = currentProcess === "LOST_FOAM" ? "1.8" : "1.5";
+    document.getElementById("whIngate").value = "3.5";
+    document.getElementById("whChoke").value = "1.0";
+    recalculateAll();
+  }
+
+  function getWinWinFlowRateAndVacuum(totalW) {
+    if (totalW < 100) return { qm: 3.5, vac: 0.25 };
+    if (totalW < 200) return { qm: 4.0, vac: 0.28 };
+    if (totalW < 300) return { qm: 4.5, vac: 0.30 };
+    if (totalW < 400) return { qm: 5.25, vac: 0.32 };
+    if (totalW < 600) return { qm: 6.25, vac: 0.35 };
+    if (totalW < 700) return { qm: 7.25, vac: 0.38 };
+    return { qm: 8.5, vac: 0.38 };
+  }
+
+  function recalculateAll() {
+    const alloyKey = getSelectedAlloyKey();
+    const alloy = ALLOY_DB[alloyKey];
+    const rho = Math.max(1000, parseFloat(document.getElementById("inpDensity").value) || 7100);
+    const avgThick = Math.max(1, parseFloat(document.getElementById("inpAvgThickness").value) || 25);
+
+    // 1. Classify wall thickness (Mục 2.2)
+    let thickText = "Thành TB (15-40mm)";
+    if (avgThick < 15) thickText = "Thành mỏng (<15mm)";
+    else if (avgThick > 40) thickText = "Thành dày (>40mm)";
+
+    const shrinkStr = currentProcess === "LOST_FOAM" ? alloy.shrinkLF : alloy.shrinkAlpha;
+    document.getElementById("kpiShrinkage").textContent = shrinkStr;
+    document.getElementById("kpiThicknessClass").textContent = `Phân loại: ${thickText}`;
+
+    // 2. RISER & NECK CALCULATION (CHƯƠNG 4)
+    const modMethod = document.getElementById("selModulusMethod").value;
+    let mHot = 15;
+    let tHot = parseFloat(document.getElementById("inpHotspotT").value) || avgThick;
+    if (modMethod === "FAST") {
+      mHot = tHot / 2.0;
+    } else {
+      const vCm3 = Math.max(1, parseFloat(document.getElementById("inpVolCm3").value) || 500);
+      const aCm2 = Math.max(1, parseFloat(document.getElementById("inpAreaCm2").value) || 250);
+      mHot = (vCm3 / aCm2) * 10.0;
+      tHot = mHot * 2.0;
+    }
+
+    const kMod = parseFloat(document.getElementById("inpModulusFactor").value) || 1.25;
+    const mRiser = mHot * kMod;
+
+    document.getElementById("resModulusPair").innerHTML =
+      `M<sub>hot</sub> = <strong>${mHot.toFixed(1)} mm</strong> &rarr; M<sub>đ</sub> = <strong>${mRiser.toFixed(1)} mm</strong>`;
+    const elModCheck = document.getElementById("resModulusCheck");
+    if (kMod >= 1.2) {
+      elModCheck.className = "cell-blue ok-green-box";
+      elModCheck.innerHTML = `Đạt (M<sub>đ</sub> = ${kMod.toFixed(2)} M<sub>hot</sub> &ge; 1.2)`;
+    } else {
+      elModCheck.className = "cell-blue warn-red-box";
+      elModCheck.innerHTML = `Cảnh báo: M<sub>đ</sub>/M<sub>hot</sub> = ${kMod.toFixed(2)} &lt; 1.2!`;
+    }
+
+    const riserCase = document.getElementById("selRiserCase").value;
+    let dFactor = 5.0;
+    let hdRatio = 1.0;
+    if (riserCase === "CASE1") { dFactor = 5.33; hdRatio = 1.5; }
+    else if (riserCase === "CASE2") { dFactor = 6.00; hdRatio = 1.0; }
+    else if (riserCase === "CASE3") { dFactor = 4.67; hdRatio = 1.5; }
+    else { dFactor = 5.00; hdRatio = 1.0; }
+
+    const dSingle = dFactor * mRiser;
+    const sharedN = Math.max(1, parseInt(document.getElementById("inpSharedN").value) || 1);
+    const riserCount = Math.max(1, parseInt(document.getElementById("inpRiserCount").value) || 1);
+
+    const dFinal = Math.cbrt(sharedN) * dSingle;
+    let hFinal = hdRatio * dFinal;
+
+    const minLfHead = avgThick < 15 ? 100 : 150;
+    if (currentProcess === "LOST_FOAM" && hFinal < minLfHead) {
+      hFinal = minLfHead;
+    }
+
+    const foamWall = 37.5;
+    let dHollow = 0;
+    if (currentProcess === "LOST_FOAM" && dFinal >= 115) {
+      dHollow = Math.round(dFinal - 2 * foamWall);
+    }
+
+    const singleRiserVolM3 = (Math.PI * Math.pow(dFinal / 1000, 2) / 4.0) * (hFinal / 1000);
+    const calcTotalRiserKg = riserCount * singleRiserVolM3 * rho;
+
+    document.getElementById("outRiserDim").textContent =
+      `Ø${Math.round(dFinal)} x Cao ${Math.round(hFinal)} mm (${riserCount} đậu)`;
+    document.getElementById("resSharedNote").textContent =
+      sharedN > 1
+        ? `Đậu chung n=${sharedN} SP (KL đậu LT: ${calcTotalRiserKg.toFixed(1)} kg)`
+        : `1 đậu / 1 vùng nóng (KL đậu LT: ${calcTotalRiserKg.toFixed(1)} kg)`;
+
+    document.getElementById("lblHollowDim").textContent =
+      dHollow > 0
+        ? `Khoét rỗng: Ø${dHollow} mm (Thành xốp ~38mm)`
+        : (currentProcess === "LOST_FOAM" ? "Đậu xốp đặc (D < 115mm)" : "Đậu khuôn cát Alphaset");
+
+    const elHeadCheck = document.getElementById("outLfRiserHeadCheck");
+    if (currentProcess === "LOST_FOAM") {
+      elHeadCheck.className = "cell-blue ok-green-box";
+      elHeadCheck.textContent = `Mặt đậu cao ≥ ${minLfHead} mm (Đạt lực đè cát)`;
+    } else {
+      elHeadCheck.className = "cell-blue";
+      elHeadCheck.textContent = "Đậu hở / Đậu kín thoát hơi đỉnh";
+    }
+
+    document.getElementById("svgHollowCore").style.display = dHollow > 0 ? "block" : "none";
+    document.getElementById("svgHollowText").style.display = dHollow > 0 ? "block" : "none";
+    document.getElementById("svgBreakerL").style.display = alloy.needNeckGroove ? "block" : "none";
+    document.getElementById("svgBreakerR").style.display = alloy.needNeckGroove ? "block" : "none";
+    document.getElementById("lblRiserNote").textContent =
+      alloy.needNeckGroove ? "Bắt buộc khứa rãnh đập 5mm (Gang Cr)" : (currentProcess === "LOST_FOAM" ? "Đậu rỗng xốp dày 35-40mm" : "Đậu bù ngót Alphaset");
+
+    const dNeck = 0.6 * dFinal;
+    const hNeck = 0.3 * dNeck;
+    document.getElementById("outNeckDim").textContent =
+      `Ø${Math.round(dNeck)} x Cao ${Math.round(hNeck)} mm (Bo vát Hbo: 25-35mm)`;
+
+    const elNeckGroove = document.getElementById("resNeckGrooveCheck");
+    if (alloy.needNeckGroove) {
+      elNeckGroove.className = "cell-blue warn-amber-box";
+      elNeckGroove.textContent = "BẮT BUỘC làm rãnh khứa đập sâu 5mm, cách SP 2mm";
+    } else {
+      elNeckGroove.className = "cell-blue ok-green-box";
+      elNeckGroove.textContent = "Cổ trụ tiêu chuẩn (Cắt hơi / Mài)";
+    }
+
+    const fd1 = Math.round(4.5 * avgThick);
+    const fd2 = Math.round(4.0 * avgThick);
+    const chillC = avgThick > 40 ? 120 : 80;
+    const fdChill = Math.round(9.0 * avgThick + chillC);
+    document.getElementById("outFeedingDist").textContent =
+      `1 Đậu → mép (4.5g): ${fd1} mm | 2 Đậu đối diện (4g): ${fd2} mm | 2 Đậu + Chill giữa (9g+C): ${fdChill} mm`;
+
+    // 3. WEIGHT & YIELD CALCULATION (Mục 5.3)
+    const cavities = Math.max(1, parseInt(document.getElementById("inpCavities").value) || 1);
+    const weightMode = document.getElementById("selWeightMode").value;
+    const inpWeightVal = Math.max(0.1, parseFloat(document.getElementById("inpCastingWeight").value) || 20);
+    const riserMode = document.getElementById("selRiserMode").value;
+    const gatingPct = Math.max(0, parseFloat(document.getElementById("inpGatingRatio").value) || 15.0);
+
+    let totalCastingKg = 0;
+    let totalRiserKg = 0;
+    let totalGatingKg = 0;
+    let totalWeightW = 0;
+
+    if (weightMode === "SINGLE") {
+      totalCastingKg = inpWeightVal * cavities;
+      if (riserMode === "AUTO_MODULUS") {
+        totalRiserKg = calcTotalRiserKg;
+        const autoPct = (totalRiserKg / totalCastingKg) * 100;
+        document.getElementById("inpRiserRatio").value = autoPct.toFixed(1);
+      } else {
+        const riserPct = Math.max(0, parseFloat(document.getElementById("inpRiserRatio").value) || 0);
+        totalRiserKg = totalCastingKg * (riserPct / 100.0);
+      }
+      totalGatingKg = (totalCastingKg + totalRiserKg) * (gatingPct / 100.0);
+      totalWeightW = totalCastingKg + totalRiserKg + totalGatingKg;
+    } else {
+      totalWeightW = inpWeightVal;
+      const riserPct = riserMode === "AUTO_MODULUS"
+        ? (calcTotalRiserKg / Math.max(1, totalWeightW * 0.55)) * 100
+        : Math.max(0, parseFloat(document.getElementById("inpRiserRatio").value) || 30);
+      const factor = (1 + riserPct / 100.0) * (1 + gatingPct / 100.0);
+      totalCastingKg = totalWeightW / factor;
+      totalRiserKg = totalCastingKg * (riserPct / 100.0);
+      totalGatingKg = totalWeightW - totalCastingKg - totalRiserKg;
+    }
+
+    const yieldPct = (totalCastingKg / totalWeightW) * 100.0;
+    const totalVolMm3 = (totalWeightW / rho) * 1e9;
+
+    document.getElementById("kpiTotalW").textContent = `${totalWeightW.toFixed(2)} kg`;
+    document.getElementById("kpiWeightBreakdown").textContent =
+      `SP: ${totalCastingKg.toFixed(1)} | Đậu: ${totalRiserKg.toFixed(1)} | Rót: ${totalGatingKg.toFixed(1)} kg`;
+    document.getElementById("kpiYield").textContent = `${yieldPct.toFixed(1)} %`;
+    document.getElementById("kpiTotalVol").textContent =
+      `Thể tích: ${Math.round(totalVolMm3).toLocaleString("en-US")} mm³`;
+
+    // 4. EFFECTIVE SPRUE HEIGHT Hef
+    const H_mm = Math.max(10, parseFloat(document.getElementById("inpH").value) || 400);
+    const C_mm = Math.max(10, parseFloat(document.getElementById("inpC").value) || 200);
+    const P_mm = Math.max(0, parseFloat(document.getElementById("inpP").value) || 100);
+    const ht_mm = Math.max(0, parseFloat(document.getElementById("inpHt").value) || 0);
+    const H_total = H_mm + ht_mm;
+
+    const gateLoc = document.querySelector('input[name="gateLoc"]:checked').value;
+    let Hef_mm = H_total;
+    let hefText = "Hef = H";
+    if (gateLoc === "TOP") {
+      Hef_mm = H_total;
+      hefText = "Top: Hef = H + ht";
+    } else if (gateLoc === "SIDE") {
+      Hef_mm = H_total - (P_mm * P_mm) / (2.0 * C_mm);
+      hefText = "Side: H - P²/(2C)";
+    } else if (gateLoc === "BOTTOM") {
+      Hef_mm = H_total - C_mm / 2.0;
+      hefText = "Bottom: H - C/2";
+    } else {
+      Hef_mm = H_total;
+      hefText = "Mục 5.6: Hef = H";
+    }
+    Hef_mm = Math.max(30, Hef_mm);
+    const Hef_m = Hef_mm / 1000.0;
+    document.getElementById("outHef").value = (Hef_mm / 10.0).toFixed(2);
+    document.getElementById("lblHefFormula").textContent = hefText;
+
+    // 5. POURING TIME (t) & POURING RATE (Qm)
+    const pourMethod = document.getElementById("selPourMethod").value;
+    const S_val = Math.max(0.5, parseFloat(document.getElementById("inpS").value) || 1.9);
+
+    let t_sec = 20.0;
+    let Qm = 5.0;
+
+    if (pourMethod === "VICO_STD") {
+      t_sec = S_val * Math.sqrt(totalWeightW);
+      Qm = totalWeightW / Math.max(0.5, t_sec);
+      document.getElementById("lblPourTimeFormula").textContent = `t = ${S_val} × √W`;
+    } else if (pourMethod === "WINWIN") {
+      const ww = getWinWinFlowRateAndVacuum(totalWeightW);
+      Qm = ww.qm;
+      t_sec = totalWeightW / Qm;
+      document.getElementById("inpLfVacuum").value = `${ww.vac.toFixed(2)} bar (Win Win)`;
+      document.getElementById("lblPourTimeFormula").textContent = `Bảng 5.2 (Qm=${ww.qm} kg/s)`;
+    } else if (pourMethod === "MANUAL_T") {
+      t_sec = Math.max(1.0, parseFloat(document.getElementById("inpManualT").value) || 20.0);
+      Qm = totalWeightW / t_sec;
+      document.getElementById("lblPourTimeFormula").textContent = "Nhập trực tiếp t";
+    } else if (pourMethod === "BY_FLOWRATE") {
+      Qm = Math.max(0.2, parseFloat(document.getElementById("inpManualQm").value) || 5.0);
+      t_sec = totalWeightW / Qm;
+      document.getElementById("lblPourTimeFormula").textContent = "t = W / Qm";
+    }
+
+    document.getElementById("outPourTime").value = t_sec.toFixed(2);
+    document.getElementById("outFlowRateQm").value = Qm.toFixed(3);
+
+    // 6. CHOKE AREA F_choke
+    const mu = Math.max(0.1, parseFloat(document.getElementById("inpMu").value) || 0.60);
+    const g = 9.81;
+    const userChoke = document.getElementById("chkUserChoke").checked;
+    const enforceMinChoke = document.getElementById("chkEnforceMinChoke").checked;
+
+    const F_choke_theory_m2 = totalWeightW / (rho * mu * t_sec * Math.sqrt(2.0 * g * Hef_m));
+    const F_choke_theory_mm2 = F_choke_theory_m2 * 1e6;
+
+    let F_choke_mm2 = F_choke_theory_mm2;
+    if (userChoke) {
+      F_choke_mm2 = Math.max(50, parseFloat(document.getElementById("inpUserChokeArea").value) || 1256);
+    } else {
+      if (enforceMinChoke && F_choke_theory_mm2 < 1256.0) {
+        F_choke_mm2 = 1256.0;
+      }
+      document.getElementById("inpUserChokeArea").value = F_choke_mm2.toFixed(1);
+    }
+
+    document.getElementById("outChokeArea").value = F_choke_mm2.toFixed(1);
+    document.getElementById("lblChokeTheory").textContent = `LT: ${F_choke_theory_mm2.toFixed(0)} mm²`;
+
+    // 7. GATING MATRIX SIZING
+    const rSprue = Math.max(0.1, parseFloat(document.getElementById("ratSprue").value) || 1.0);
+    const rRunner = Math.max(0.1, parseFloat(document.getElementById("ratRunner").value) || 1.5);
+    const rIngate = Math.max(0.1, parseFloat(document.getElementById("ratIngate").value) || 1.5);
+
+    const nSprue = Math.max(1, parseInt(document.getElementById("numSprue").value) || 1);
+    const nRunner = Math.max(1, parseInt(document.getElementById("numRunner").value) || 1);
+    const nIngate = Math.max(1, parseInt(document.getElementById("numIngate").value) || 1);
+    const nChoke = Math.max(1, parseInt(document.getElementById("numChoke").value) || 1);
+
+    const whSprue = parseFloat(document.getElementById("whSprue").value) || 1.0;
+    const whRunner = parseFloat(document.getElementById("whRunner").value) || 1.5;
+    const whIngate = parseFloat(document.getElementById("whIngate").value) || 3.5;
+    const whChoke = parseFloat(document.getElementById("whChoke").value) || 1.0;
+
+    const tSprue = document.getElementById("typeSprue").value;
+    const tRunner = document.getElementById("typeRunner").value;
+    const tIngate = document.getElementById("typeIngate").value;
+    const tChoke = document.getElementById("typeChoke").value;
+
+    // Update mirrored read-only config cells in Result Matrix
+    document.getElementById("dispRatSprue").textContent = rSprue.toFixed(2);
+    document.getElementById("dispRatRunner").textContent = rRunner.toFixed(2);
+    document.getElementById("dispRatIngate").textContent = rIngate.toFixed(2);
+    document.getElementById("dispNumSprue").textContent = nSprue;
+    document.getElementById("dispNumRunner").textContent = nRunner;
+    document.getElementById("dispNumIngate").textContent = nIngate;
+    document.getElementById("dispNumChoke").textContent = nChoke;
+    document.getElementById("dispWhSprue").textContent = whSprue.toFixed(1);
+    document.getElementById("dispWhRunner").textContent = whRunner.toFixed(1);
+    document.getElementById("dispWhIngate").textContent = whIngate.toFixed(1);
+    document.getElementById("dispWhChoke").textContent = whChoke.toFixed(1);
+
+    const typeNames = { TAPERED: "Tapered 4%", CIRCULAR: "Circular (Ø)", QUADRATE: "Quadrate (W×H)" };
+    document.getElementById("dispTypeSprue").textContent = typeNames[tSprue];
+    document.getElementById("dispTypeRunner").textContent = typeNames[tRunner];
+    document.getElementById("dispTypeIngate").textContent = typeNames[tIngate];
+    document.getElementById("dispTypeChoke").textContent = typeNames[tChoke];
+
+    const qmPerIngate = Qm / nIngate;
+    document.getElementById("lblQmPerIngate").textContent = `${qmPerIngate.toFixed(2)} kg/s/cửa`;
+    document.getElementById("kpiPourTimeRate").textContent = `${t_sec.toFixed(1)} s | ${Qm.toFixed(2)} kg/s`;
+    document.getElementById("kpiRatePerGate").textContent = `Mỗi cửa (${nIngate} cửa): ${qmPerIngate.toFixed(2)} kg/s`;
+
+    const totSprue = F_choke_mm2 * rSprue;
+    const totRunner = F_choke_mm2 * rRunner;
+    const totIngate = F_choke_mm2 * rIngate;
+    const totChoke = F_choke_mm2;
+
+    const eachSprue = totSprue / nSprue;
+    const eachRunner = totRunner / nRunner;
+    const eachIngate = totIngate / nIngate;
+    const eachChoke = totChoke / nChoke;
+
+    document.getElementById("totAreaSprue").textContent = totSprue.toFixed(1);
+    document.getElementById("totAreaRunner").textContent = totRunner.toFixed(1);
+    document.getElementById("totAreaIngate").textContent = totIngate.toFixed(1);
+    document.getElementById("totAreaChoke").textContent = totChoke.toFixed(1);
+
+    document.getElementById("eachAreaSprue").textContent = eachSprue.toFixed(1);
+    document.getElementById("eachAreaRunner").textContent = eachRunner.toFixed(1);
+    document.getElementById("eachAreaIngate").textContent = eachIngate.toFixed(1);
+    document.getElementById("eachAreaChoke").textContent = eachChoke.toFixed(1);
+
+    // Check Min VICO Standards (Bảng 8.1)
+    const elMinRunner = document.getElementById("minCheckRunner");
+    const elMinIngate = document.getElementById("minCheckIngate");
+    const elMinChoke = document.getElementById("minCheckChoke");
+
+    elMinRunner.className = eachRunner >= 1599 ? "cell-blue ok-green-box" : "cell-blue warn-amber-box";
+    elMinRunner.textContent = eachRunner >= 1599 ? "Đạt (≥1600 mm²)" : "Nhỏ hơn 40x40 (1600)";
+
+    elMinIngate.className = eachIngate >= 313 ? "cell-blue ok-green-box" : "cell-blue warn-red-box";
+    elMinIngate.textContent = eachIngate >= 313 ? "Đạt (≥314 mm² Ø20)" : "Nhỏ hơn Ø20 (314)!";
+
+    elMinChoke.className = eachChoke >= 1255 ? "cell-blue ok-green-box" : "cell-blue warn-red-box";
+    elMinChoke.textContent = eachChoke >= 1255
+      ? `Đạt (≥1256 | LT:${Math.round(F_choke_theory_mm2)})`
+      : "Nhỏ hơn D40 (1256)!";
+
+    function calcSectionDims(areaMm2, type, whRatio, isSprue = false) {
+      if (type === "TAPERED") {
+        const dBot = Math.sqrt((4.0 * areaMm2) / Math.PI);
+        const dTop = dBot + 0.04 * H_mm;
+        return {
+          wText: `Ø_đáy: ${dBot.toFixed(1)}`,
+          hText: `Ø_đỉnh: ${dTop.toFixed(1)} (4%)`,
+          dh_m: dBot / 1000.0,
+          wVal: dBot,
+          hVal: dTop
+        };
+      } else if (type === "CIRCULAR") {
+        const d = Math.sqrt((4.0 * areaMm2) / Math.PI);
+        return {
+          wText: `Ø${d.toFixed(1)}`,
+          hText: isSprue ? `Cao: ${H_mm}` : "Cao cổ: 30-40",
+          dh_m: d / 1000.0,
+          wVal: d,
+          hVal: d
+        };
+      } else {
+        const h = Math.sqrt(areaMm2 / whRatio);
+        const w = h * whRatio;
+        const dh = (2.0 * w * h) / (w + h);
+        return {
+          wText: `${w.toFixed(1)}`,
+          hText: `${h.toFixed(1)}`,
+          dh_m: dh / 1000.0,
+          wVal: w,
+          hVal: h
+        };
+      }
+    }
+
+    const dSprue = calcSectionDims(eachSprue, tSprue, whSprue, true);
+    const dRunner = calcSectionDims(eachRunner, tRunner, whRunner);
+    const dIngate = calcSectionDims(eachIngate, tIngate, whIngate);
+    const dChoke = calcSectionDims(eachChoke, tChoke, whChoke);
+
+    document.getElementById("dimWSprue").textContent = dSprue.wText;
+    document.getElementById("dimHSprue").textContent = dSprue.hText;
+    document.getElementById("dimWRunner").textContent = dRunner.wText;
+    document.getElementById("dimHRunner").textContent = dRunner.hText;
+    document.getElementById("dimWIngate").textContent = dIngate.wText;
+    document.getElementById("dimHIngate").textContent = dIngate.hText;
+    document.getElementById("dimWChoke").textContent = dChoke.wText;
+    document.getElementById("dimHChoke").textContent = dChoke.hText;
+
+    // 8. VELOCITY & REYNOLDS NUMBER
+    const Qv_m3s = Qm / rho;
+    const vSprue = Qv_m3s / (totSprue * 1e-6);
+    const vRunner = Qv_m3s / (totRunner * 1e-6);
+    const vIngate = Qv_m3s / (totIngate * 1e-6);
+    const vChoke = Qv_m3s / (totChoke * 1e-6);
+
+    document.getElementById("velSprue").textContent = vSprue.toFixed(3);
+    document.getElementById("velRunner").textContent = vRunner.toFixed(3);
+    document.getElementById("velIngate").textContent = vIngate.toFixed(3);
+    document.getElementById("velChoke").textContent = vChoke.toFixed(3);
+
+    const nu = 0.85e-6;
+    document.getElementById("reSprue").textContent = Math.round((vSprue * dSprue.dh_m) / nu).toLocaleString("en-US");
+    document.getElementById("reRunner").textContent = Math.round((vRunner * dRunner.dh_m) / nu).toLocaleString("en-US");
+    document.getElementById("reIngate").textContent = Math.round((vIngate * dIngate.dh_m) / nu).toLocaleString("en-US");
+    document.getElementById("reChoke").textContent = Math.round((vChoke * dChoke.dh_m) / nu).toLocaleString("en-US");
+
+    // 9. INGATE VELOCITY WARNINGS
+    const thinFastLF = document.getElementById("chkThinFastLF").checked;
+    let vMin = 0.5, vMax = 0.8;
+    if (currentProcess === "LOST_FOAM") {
+      vMin = 0.5;
+      vMax = thinFastLF ? 1.0 : 0.8;
+    } else {
+      vMin = 0.6;
+      vMax = 1.2;
+    }
+
+    document.getElementById("outMaxVelRef").value = `${vMin.toFixed(2)} - ${vMax.toFixed(2)}`;
+    const outVelBox = document.getElementById("outIngateVelHighlight");
+    const cellVelIngate = document.getElementById("velIngate");
+    const lblVelStatus = document.getElementById("lblVelStatus");
+    outVelBox.value = vIngate.toFixed(3);
+
+    const alerts = [];
+
+    if (vIngate > vMax) {
+      outVelBox.className = "warn-red-box";
+      cellVelIngate.className = "cell-blue warn-red-box";
+      lblVelStatus.textContent = `Vượt ngưỡng (> ${vMax} m/s)!`;
+      lblVelStatus.style.color = "#e60000";
+      alerts.push({
+        type: "red",
+        text: `CẢNH BÁO ĐỎ: Vận tốc Ingate (${vIngate.toFixed(2)} m/s) vượt ngưỡng cho phép (${vMax} m/s) → Nguy cơ xói khuôn, cuốn khí, sập khuôn! Hãy tăng số Ingate hoặc tăng tỉ lệ Ingate ở Khu vực 1.`
+      });
+    } else if (vIngate < vMin) {
+      outVelBox.className = "warn-amber-box";
+      cellVelIngate.className = "cell-blue warn-amber-box";
+      lblVelStatus.textContent = `Thấp (< ${vMin} m/s)`;
+      lblVelStatus.style.color = "#b36b00";
+      alerts.push({
+        type: "amber",
+        text: `LƯU Ý: Vận tốc Ingate (${vIngate.toFixed(2)} m/s) thấp hơn khuyến nghị (${vMin} m/s) → Kiểm tra nguy cơ nguội kim loại / cold shut.`
+      });
+    } else {
+      outVelBox.className = "ok-green-box";
+      cellVelIngate.className = "cell-blue ok-green-box";
+      lblVelStatus.textContent = "Đạt chuẩn VICO";
+      lblVelStatus.style.color = "#1e7e34";
+    }
+
+    if (kMod < 1.2) {
+      alerts.push({
+        type: "red",
+        text: `CẢNH BÁO ĐỎ: Hệ số Modulus đậu Mđ/Mhot = ${kMod.toFixed(2)} < 1.2 → Đậu bù ngót có nguy cơ đông đặc sớm trước tâm nhiệt!`
+      });
+    }
+
+    if (eachChoke < 1255) {
+      alerts.push({
+        type: "red",
+        text: `CẢNH BÁO ĐỎ: Tiết diện Choke (${Math.round(eachChoke)} mm²) nhỏ hơn quy định tối thiểu VICO D40 (1256 mm²)!`
+      });
+    }
+
+    // 10. AUXILIARY DIMENSIONS
+    const dChokeEq = Math.sqrt((4.0 * eachChoke) / Math.PI);
+    const wellD = Math.max(60, Math.round((dChokeEq * 1.5) / 5) * 5);
+    document.getElementById("outSprueWell").textContent = `Ø${wellD} x Cao ${wellD} mm`;
+
+    const wRun = dRunner.wVal;
+    const hRun = dRunner.hVal;
+    const extLMin = Math.round(2.0 * wRun);
+    const extLMax = Math.round(2.5 * wRun);
+    document.getElementById("outRunnerExt").textContent =
+      `Dài ${extLMin}÷${extLMax} x Rộng ${Math.round(wRun)} x Cao ${Math.round(hRun)} mm`;
+
+    const trapL = Math.round(1.5 * wRun);
+    const trapW = Math.round(1.1 * wRun);
+    const trapDepth = Math.round(1.5 * hRun);
+    document.getElementById("outSlagTrap").textContent =
+      `Dài ${trapL} x Rộng ${trapW} x Sâu ${trapDepth} mm`;
+
+    // Render Footer Alerts
+    const footerEl = document.getElementById("footerAlerts");
+    if (alerts.length === 0) {
+      footerEl.innerHTML = `<span class="badge-alert badge-green">&#10004; Tất cả thông số Vận tốc Ingate (${vIngate.toFixed(2)} m/s), Choke, Runner và Modulus Đậu bù ngót đều ĐẠT CHUẨN VICO</span>`;
+    } else {
+      footerEl.innerHTML = alerts
+        .map(a => `<span class="badge-alert ${a.type === "red" ? "badge-red" : "badge-amber"}">${a.text}</span>`)
+        .join("");
+    }
+
+    // Save state for Chapter 9 Report Modal
+    window.__vicoState = {
+      processName: currentProcess === "LOST_FOAM" ? "Đúc mẫu xốp (Lost Foam)" : "Đúc cát nhựa (Alphaset)",
+      alloyName: alloy.name,
+      shrinkage: shrinkStr,
+      cavities,
+      totalCastingKg: totalCastingKg.toFixed(1),
+      totalRiserKg: totalRiserKg.toFixed(1),
+      totalGatingKg: totalGatingKg.toFixed(1),
+      totalWeightW: totalWeightW.toFixed(1),
+      yieldPct: yieldPct.toFixed(1),
+      avgThick,
+      tHot,
+      mHot: mHot.toFixed(1),
+      mRiser: mRiser.toFixed(1),
+      riserCount,
+      sharedN,
+      riserDim: document.getElementById("outRiserDim").textContent,
+      hollowText: document.getElementById("lblHollowDim").textContent,
+      neckDim: document.getElementById("outNeckDim").textContent,
+      needNeckGroove: alloy.needNeckGroove,
+      fdText: document.getElementById("outFeedingDist").textContent,
+      gateLoc,
+      S_val,
+      t_sec: t_sec.toFixed(1),
+      Qm: Qm.toFixed(2),
+      qmPerIngate: qmPerIngate.toFixed(2),
+      mu,
+      Hef_cm: (Hef_mm / 10.0).toFixed(1),
+      F_choke: F_choke_mm2.toFixed(0),
+      F_choke_theory: F_choke_theory_mm2.toFixed(0),
+      sprueText: `${nSprue} ống (${dSprue.wText} / ${dSprue.hText})`,
+      runnerText: `${nRunner} nhánh (${dRunner.wText} x ${dRunner.hText} mm, A=${eachRunner.toFixed(0)} mm²)`,
+      ingateText: `${nIngate} cửa (${dIngate.wText} x ${dIngate.hText}, A_1cửa=${eachIngate.toFixed(0)} mm²)`,
+      vIngate: vIngate.toFixed(2),
+      vMax,
+      vMin,
+      wellText: document.getElementById("outSprueWell").textContent,
+      extText: document.getElementById("outRunnerExt").textContent,
+      trapText: document.getElementById("outSlagTrap").textContent,
+      pourTemp: document.getElementById("inpPourTemp").value,
+      alerts
+    };
+  }
+
+  // ================= PRESET EXAMPLES FROM VICO PDF =================
+  function loadPreset(code) {
+    if (code === "DAO_LF") {
+      switchProcess("LOST_FOAM");
+      document.querySelector('input[name="alloy"][value="GANG_CROM"]').checked = true;
+      onAlloyChange();
+      document.getElementById("selWeightMode").value = "CLUSTER";
+      document.getElementById("inpCastingWeight").value = "139";
+      document.getElementById("inpCavities").value = "4";
+      document.getElementById("inpAvgThickness").value = "41";
+      document.getElementById("inpHotspotT").value = "41";
+      document.getElementById("inpModulusFactor").value = "1.22";
+      document.getElementById("selRiserCase").value = "CASE4";
+      document.getElementById("inpRiserCount").value = "4";
+      document.getElementById("inpSharedN").value = "1";
+      document.getElementById("selPourMethod").value = "VICO_STD";
+      onPourMethodChange();
+      document.getElementById("inpS").value = "1.95";
+      document.getElementById("numIngate").value = "4";
+      document.getElementById("typeIngate").value = "CIRCULAR";
+      setGlobalRatio(1.0, 1.15, 0.9, true);
+      document.getElementById("repProdName").value = "Chùm 4 Dao đúc xốp Lost Foam (Hình 5.2)";
+    } else if (code === "CANH_XOAN_LF") {
+      switchProcess("LOST_FOAM");
+      document.querySelector('input[name="alloy"][value="GANG_CROM"]').checked = true;
+      onAlloyChange();
+      document.getElementById("selWeightMode").value = "SINGLE";
+      document.getElementById("inpCastingWeight").value = "95";
+      document.getElementById("inpCavities").value = "1";
+      document.getElementById("inpAvgThickness").value = "45";
+      document.getElementById("inpHotspotT").value = "76.7";
+      document.getElementById("inpModulusFactor").value = "1.22";
+      document.getElementById("selRiserCase").value = "CASE2";
+      document.getElementById("inpRiserCount").value = "1";
+      document.getElementById("selPourMethod").value = "WINWIN";
+      onPourMethodChange();
+      document.getElementById("numIngate").value = "2";
+      setGlobalRatio(1.0, 1.5, 1.5, true);
+      document.getElementById("repProdName").value = "Cánh xoắn ISHIZUE OMEGA 406.4-1130 (Mục 4.11)";
+    } else if (code === "DIA_BUA_ALPHA") {
+      switchProcess("ALPHASET");
+      document.querySelector('input[name="alloy"][value="THEP_MN"]').checked = true;
+      onAlloyChange();
+      document.getElementById("selWeightMode").value = "SINGLE";
+      document.getElementById("inpCastingWeight").value = "106.5";
+      document.getElementById("inpRiserRatio").value = "70";
+      document.getElementById("inpCavities").value = "1";
+      document.getElementById("inpAvgThickness").value = "50";
+      document.getElementById("inpHotspotT").value = "55";
+      document.getElementById("inpRiserCount").value = "2";
+      document.getElementById("selPourMethod").value = "VICO_STD";
+      onPourMethodChange();
+      document.getElementById("numIngate").value = "2";
+      document.getElementById("inpS").value = "2.20";
+      setGlobalRatio(1.0, 2.0, 2.0, true);
+      document.getElementById("repProdName").value = "Đĩa búa đúc Alphaset (Hình 3.1b)";
+    }
+  }
+
+  function openModal(id) {
+    if (id === "modalReport") populateReportModal();
+    document.getElementById(id).classList.add("show");
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove("show");
+  }
+
+  function populateReportModal() {
+    recalculateAll();
+    const s = window.__vicoState;
+    document.getElementById("repDate").textContent = new Date().toLocaleDateString("vi-VN");
+
+    const specProcessRow = currentProcess === "LOST_FOAM"
+      ? `<tr><td><strong>Thông số Lost Foam (Chương 6)</strong></td><td>${document.getElementById("inpLfEps").value} | ${document.getElementById("inpLfCoating").value} | Áp âm: ${document.getElementById("inpLfVacuum").value}</td></tr>`
+      : `<tr><td><strong>Thông số Alphaset (Chương 6)</strong></td><td>Cát: ${document.getElementById("inpAlSand").value} | Sơn: ${document.getElementById("inpAlCoating").value} | ${document.getElementById("inpAlShakeout").value}</td></tr>`;
+
+    document.getElementById("repTableSummary").innerHTML = `
+      <thead>
+        <tr><th style="width:230px;">Nhóm thông số (Mục 9.1)</th><th>Giá trị thiết kế công nghệ chốt</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1. Công nghệ &amp; Vật liệu</strong></td><td><strong>${s.processName}</strong> &mdash; Vật liệu: <strong>${s.alloyName}</strong> (Tỉ lệ nhân co VICO: <strong>${s.shrinkage}</strong>)</td></tr>
+        <tr><td><strong>2. Khối lượng &amp; Thu hồi (Yield)</strong></td><td>Số SP/chùm: <strong>${s.cavities}</strong> | W<sub>SP</sub> = <strong>${s.totalCastingKg} kg</strong> | W<sub>Đậu</sub> = <strong>${s.totalRiserKg} kg</strong> | W<sub>Hệ rót</sub> = <strong>${s.totalGatingKg} kg</strong> &rArr; <strong>W<sub>tổng</sub> = ${s.totalWeightW} kg (Yield = ${s.yieldPct}%)</strong></td></tr>
+        <tr><td><strong>3. Phân tích Đông đặc &amp; Tâm nhiệt</strong></td><td>Chiều dày TB: <strong>${s.avgThick} mm</strong> | ĐK nội tiếp Hotspot t = <strong>${s.tHot} mm</strong> &rArr; M<sub>hot</sub> = <strong>${s.mHot} mm</strong>; M<sub>đậu</sub> = <strong>${s.mRiser} mm</strong></td></tr>
+        <tr><td><strong>4. Đậu bù ngót (Riser)</strong></td><td><strong>${s.riserDim}</strong> (Nuôi chung n=${s.sharedN}) | ${s.hollowText}</td></tr>
+        <tr><td><strong>5. Cổ đậu &amp; Khoảng cách cấp bù</strong></td><td><strong>${s.neckDim}</strong> ${s.needNeckGroove ? "| <strong>BẮT BUỘC làm rãnh khứa đập sâu 5mm, cách SP 2mm</strong>" : ""} | ${s.fdText}</td></tr>
+        <tr><td><strong>6. Thời gian &amp; Tốc độ rót</strong></td><td>Hệ số S = <strong>${s.S_val}</strong> | Thời gian rót t = <strong>${s.t_sec} s</strong> | Lưu lượng tổng Q<sub>m</sub> = <strong>${s.Qm} kg/s</strong> (${s.qmPerIngate} kg/s/ingate)</td></tr>
+        <tr><td><strong>7. Choke &amp; Thủy lực</strong></td><td>Kiểu rót: <strong>${s.gateLoc}</strong> | Cột áp H<sub>ef</sub> = <strong>${s.Hef_cm} cm</strong> | Hệ số lưu lượng &mu; = <strong>${s.mu}</strong> | F<sub>choke</sub> = <strong>${s.F_choke} mm²</strong> (Lý thuyết: ${s.F_choke_theory} mm²)</td></tr>
+        <tr><td><strong>8. Ống rót, Runner &amp; Phụ trợ</strong></td><td>Ống rót: <strong>${s.sprueText}</strong> | Giếng đáy: <strong>${s.wellText}</strong> | Runner: <strong>${s.runnerText}</strong> | Đuôi Runner: <strong>${s.extText}</strong> | Bẫy xỉ: <strong>${s.trapText}</strong></td></tr>
+        <tr><td><strong>9. Cửa vào (Ingate) &amp; Vận tốc</strong></td><td><strong>${s.ingateText}</strong> | Vận tốc dòng qua Ingate: <strong>v = ${s.vIngate} m/s</strong> (Khuyến nghị: ${s.vMin} - ${s.vMax} m/s)</td></tr>
+        <tr><td><strong>10. Nhiệt độ rót đầu / cuối</strong></td><td><strong>${s.pourTemp} &deg;C</strong> (Đo tại gầu rót trước khi rót)</td></tr>
+        ${specProcessRow}
+      </tbody>
+    `;
+
+    const vOk = parseFloat(s.vIngate) >= s.vMin && parseFloat(s.vIngate) <= s.vMax;
+    const modOk = parseFloat(s.mRiser) >= 1.2 * parseFloat(s.mHot);
+    const chokeOk = parseFloat(s.F_choke) >= 1255;
+
+    const checklistItems = [
+      ["1", "Đã đủ bản vẽ, vật liệu, khối lượng, tỉ lệ nhân co mẫu VICO chưa?", "ĐẠT", `Tỉ lệ co: ${s.shrinkage}`],
+      ["2", "Đã xác định chiều dày trung bình và đường kính nội tiếp vùng nóng (Hotspot) chưa?", "ĐẠT", `t_hot = ${s.tHot} mm (M_hot = ${s.mHot} mm)`],
+      ["3", "Tư thế đặt và hướng rót có thuận điền đầy từ dưới lên, thoát khí và bù ngót không?", "ĐẠT", `Hướng rót: ${s.gateLoc}`],
+      ["4", "Đậu bù ngót có đủ Modulus (Mđ >= 1.2 Mhot) để đông đặc sau hotspot không?", modOk ? "ĐẠT" : "KHÔNG ĐẠT", `Mđ = ${s.mRiser} mm vs Mhot = ${s.mHot} mm`],
+      ["5", "Cổ đậu (Dc = 0.6 Dđ) có đủ cấp bù và có rãnh đập (với Gang Cr) không?", "ĐẠT", s.neckDim + (s.needNeckGroove ? " (Có khứa rãnh đập 5mm)" : "")],
+      ["6", "Thời gian rót t và hệ số S có phù hợp với vật liệu/công nghệ không?", "ĐẠT", `S = ${s.S_val}, t = ${s.t_sec} s, Qm = ${s.Qm} kg/s`],
+      ["7", "Vận tốc từng Ingate có nằm trong vùng khuyến nghị VICO không?", vOk ? "ĐẠT" : "CẦN HIỆU CHỈNH", `v = ${s.vIngate} m/s (Chuẩn: ${s.vMin}-${s.vMax} m/s)`],
+      ["8", "Tiết diện Choke, Runner, Sprue Well, Runner Extension & Slag Trap có đạt chuẩn không?", chokeOk ? "ĐẠT" : "KHÔNG ĐẠT", `F_choke = ${s.F_choke} mm² (Min D40 = 1256 mm²)`],
+      ["9", "Nhiệt độ rót đầu / cuối đã chốt phù hợp với chiều dày và vật liệu chưa?", "ĐẠT", `${s.pourTemp} °C`],
+      ["10", "Đã kiểm tra thông số riêng (Lost Foam: EPS, sơn, áp âm, đậu rỗng / Alphaset: cát, sơn, lõi) chưa?", "ĐẠT", s.processName],
+      ["11", "Tỉ lệ thu hồi (Yield %) có hợp lý và không đánh đổi chất lượng không?", "ĐẠT", `Yield = ${s.yieldPct}%`],
+      ["12", "Sẵn sàng chuyển sang bước Mô phỏng ProCAST (Chương 7) trước khi đúc thử?", (vOk && modOk && chokeOk) ? "ĐẠT" : "CHỜ SỬA", "Kiểm tra filling & solidification trên ProCAST"]
+    ];
+
+    document.getElementById("repChecklistTable").innerHTML = `
+      <thead>
+        <tr><th style="width:40px;">STT</th><th>Câu hỏi phê duyệt (Mục 9.2)</th><th style="width:120px;">Đánh giá</th><th>Ghi chú / Thông số kiểm chứng</th></tr>
+      </thead>
+      <tbody>
+        ${checklistItems.map(item => `
+          <tr>
+            <td style="text-align:center;">${item[0]}</td>
+            <td>${item[1]}</td>
+            <td style="font-weight:700; color:${item[2] === "ĐẠT" ? "#1e7e34" : "#c00"};">${item[2]}</td>
+            <td>${item[3]}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    `;
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    loadPreset("DAO_LF");
+  });
+</script>
+</body>
+</html>

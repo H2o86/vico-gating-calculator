@@ -1,0 +1,30 @@
+# Bảo mật dữ liệu nội bộ: Chặn mặc định toàn bộ tài liệu, bản vẽ, file PDF, hình ảnh mẫu trong thư mục
+*
+
+# Chỉ cho phép đẩy duy nhất file ứng dụng Web tĩnh (index.html) và cấu hình .gitignore
+!/index.html
+!/.gitignore
+
+# Chặn tuyệt đối các định dạng tài liệu nội bộ & bản vẽ kỹ thuật
+*.pdf
+*.PDF
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.jfif
+*.jpg
+*.jpeg
+*.png
+*.dwg
+*.dxf
+*.step
+*.stp
+*.iges
+*.igs
+*.FCStd
+*.env
+*.key
+*.pem
